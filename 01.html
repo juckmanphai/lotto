@@ -307,25 +307,23 @@
         #modalBodyContent { background-color: #FAFAD2; border: 3px solid #4CAF50; border-radius: 10px; padding: 20px; width: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.25); max-height: 85vh; overflow-y: auto; }
         #modalBodyContent, #modalBodyContent * { color: blue !important; }
         
-        /* --- NEW: Reduced spacing inside modal --- */
         #modalBodyContent h2 {
             margin-top: 0;
-            margin-bottom: 8px; /* Reduced */
+            margin-bottom: 8px; 
             padding-bottom: 5px;
             font-size: 1.2rem;
         }
         #modalBodyContent p {
-            margin-top: 4px; /* Reduced */
-            margin-bottom: 4px; /* Reduced */
+            margin-top: 4px; 
+            margin-bottom: 4px; 
             line-height: 1.3;
         }
         #modalBodyContent table {
-            margin-top: 10px; /* Reduced */
+            margin-top: 10px; 
         }
         #modalBodyContent hr {
-            margin: 15px 0; /* Reduced */
+            margin: 15px 0; 
         }
-        /* --- END NEW --- */
         
         .modal-close-btn { background-color: #E97132; color: white; padding: 12px 30px; border: none; cursor: pointer; border-radius: 20px; font-size: 16px; margin-top: 10px; transition: background-color 0.3s; }
         .modal-close-btn:hover { background-color: #e64a19; }
@@ -428,6 +426,89 @@
                 margin: 0;
             }
              /* === END: REFINED RULES FOR POS CART TABLE === */
+
+            /* === POS Page Mobile Compacting Rules === */
+            #page-pos h2, #page-pos h3 {
+                margin-bottom: 15px;
+                padding-bottom: 8px;
+                font-size: 1.1rem;
+            }
+            #page-pos .pos-datetime-bar {
+                padding: 10px;
+                gap: 10px;
+                margin-bottom: 15px;
+            }
+            #page-pos #add-to-cart-form {
+                gap: 10px;
+                margin-bottom: 15px;
+            }
+            #page-pos #add-to-cart-form input,
+            #page-pos #add-to-cart-form select {
+                padding: 8px 10px;
+                font-size: 0.9em;
+            }
+            #page-pos #add-to-cart-form .form-actions button {
+                padding: 10px;
+                font-size: 0.95em;
+            }
+            #page-pos #special-price-container {
+                 grid-template-columns: 100px 1fr;
+                 gap: 8px;
+            }
+
+            /* --- Cart Summary Compacting Rules --- */
+            #page-pos #cart-summary {
+                padding: 10px;
+            }
+            #page-pos #cart-summary h4 {
+                font-size: 1rem;
+                margin-top: 0;
+                margin-bottom: 5px;
+            }
+            #page-pos #payment-method-container {
+                margin-top: 10px;
+                padding-top: 10px;
+                border-top: 1px solid #ddd;
+            }
+            #page-pos .payment-options-wrapper {
+                margin: 5px 0 10px 0;
+                gap: 15px;
+            }
+             #page-pos #credit-fields-container {
+                margin-top: 5px;
+            }
+            #page-pos #credit-fields-container > div {
+                margin-top: 5px;
+            }
+            
+            /* --- NEW: Action Row for Cart Footer --- */
+            #page-pos .cart-action-row {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                margin-top: 15px;
+                padding-top: 10px;
+                border-top: 1px solid #ddd;
+            }
+            #page-pos .cart-total-label {
+                font-size: 1rem;
+                font-weight: bold;
+                white-space: nowrap;
+            }
+            #page-pos #cart-total {
+                font-size: 1.6rem; /* Adjusted */
+                margin: 0;
+                flex-grow: 1;
+                text-align: right;
+            }
+            #page-pos #process-sale-btn {
+                padding: 8px 10px; /* Adjusted */
+                font-size: 0.9em; /* Adjusted */
+                margin: 0;
+                flex-shrink: 0;
+                width: auto; /* Override default width */
+            }
+            /* --- END NEW --- */
             
             /* MODAL TABLE RESPONSIVE STYLES (Keep as is) */
             #modalBodyContent table { width: 100%; table-layout: auto; }
@@ -706,7 +787,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <h2>${title}</h2>
                         <p style="font-size:0.8em; color:#555; margin-bottom: 0;">สรุปโดย: ${this.currentUser.username} | สรุปเมื่อ: ${summaryTimestamp}</p>
                         ${fullDateLine}
-                        <p style="margin-bottom: 8px;"><strong>ยอดขายรวม: ${formatCurrency(sellerData.totalSales)} บาท</strong> (${isSellerReport ? `เงินสด: ${formatCurrency(sellerData.totalCash)} | เครดิต: ${formatCurrency(sellerData.totalCredit)}` : ''})</p>
+                        <p style="margin-bottom: 8px;"><strong>ยอดขายรวม: ${formatCurrency(sellerData.totalSales)} บาท</strong> <br><span style="font-size:0.9em; color:#555;">(เงินสด: ${formatCurrency(sellerData.totalCash)} | เครดิต: ${formatCurrency(sellerData.totalCredit)})</span></p>
                         ${profitOrCommissionHtml}
                         <table class="product-summary-table">
                             <thead><tr><th>สินค้า</th><th>ขายเงินสด</th><th>ขายเครดิต</th><th>รวม (หน่วย)</th><th>ยอดขาย (บาท)</th><th>สต็อกคงเหลือ</th></tr></thead>
@@ -737,7 +818,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p style="font-weight: bold; font-size: 1.2em; color: ${summaryResult.grandTotalProfit >= 0 ? 'green' : 'red'};">
                         <strong>กำไรสุทธิรวม: ${formatCurrency(summaryResult.grandTotalProfit)} บาท</strong>
                     </p><hr>`;
-                 allSellersHtml = allSellersHtml.replace(/<h2.*?>(.*?)<\/h2>/, `<h2>สรุปตามผู้ขาย: $1</h2>`); // Keep the seller name
+                 allSellersHtml = allSellersHtml.replace(/<h2.*?>(.*?)<\/h2>/, `<h2>สรุปตามผู้ขาย: $1</h2>`);
             }
             
             return `${overallSummaryHtml}${allSellersHtml || '<p>ไม่พบข้อมูลการขายในช่วงเวลานี้</p>'}`;
@@ -845,7 +926,7 @@ document.addEventListener('DOMContentLoaded', () => {
         deleteUser(id) { const user = this.data.users.find(u => u.id == id); if (user && user.username === 'admin') { this.showToast('ไม่สามารถลบผู้ใช้ admin ได้'); return; } if(confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบผู้ใช้ ${user.username}?`)) { this.data.users = this.data.users.filter(u => u.id != id); this.saveData(); this.renderUserTable(); } },
         renderUserProductAssignment(selectedIds = []) { const container = document.getElementById('user-product-assignment'); container.innerHTML = ''; if (this.data.products.length === 0) { container.innerHTML = '<p>ยังไม่มีสินค้าในระบบ โปรดเพิ่มสินค้าก่อน</p>'; return; } this.data.products.forEach(p => { const isChecked = selectedIds.includes(p.id); container.innerHTML += `<label class="product-item" style="display: block; margin-bottom: 5px;"><input type="checkbox" value="${p.id}" ${isChecked ? 'checked' : ''}> ${p.name}</label>`; }); },
         fillPages(){ 
-            document.getElementById('page-pos').innerHTML = `<h2>ขายสินค้า (Point of Sale)</h2><div style="display: flex; gap: 20px; flex-wrap: wrap; background-color: #f0f7ff; padding: 15px; border-radius: 8px; margin-bottom: 20px;"><div><label for="pos-date" style="text-align:left;font-weight:bold;">วันที่ขาย:</label><input type="date" id="pos-date"></div><div><label for="pos-time" style="text-align:left;font-weight:bold;">เวลา:</label><input type="time" id="pos-time"></div></div><div class="pos-layout"><div><form id="add-to-cart-form" style="max-width:none;"><label for="pos-product">เลือกสินค้า:</label><select id="pos-product" required></select><label for="pos-quantity">จำนวน:</label><input type="number" id="pos-quantity" value="1" min="1" required><div id="special-price-container" style="display:none; grid-template-columns: 150px 1fr;"><label for="special-price">ราคาขายใหม่:</label><div><input type="number" id="special-price" placeholder="กรอกราคาต่อหน่วย" min="0" step="any"><span id="current-price-info" style="font-size: 0.9em; color: #555; margin-left: 10px;"></span></div></div><div class="form-actions"><button type="submit" class="success">เพิ่มลงตะกร้า</button><button type="button" id="toggle-special-price-btn">ใช้ราคาพิเศษ</button></div></form><h3>รายการในตะกร้า</h3><div class="table-container"><table id="cart-table"><thead><tr><th>สินค้า</th><th>ราคาฯ</th><th>จำนวน</th><th>รวม</th><th>ลบ</th></tr></thead><tbody></tbody></table></div></div><div id="cart-summary"><h3>สรุปยอด</h3><div id="cart-total">฿0.00</div><div id="payment-method-container"><h4>ประเภทการชำระเงิน</h4><div class="payment-options-wrapper"><label><input type="radio" name="payment-method" value="เงินสด" checked> เงินสด</label><label><input type="radio" name="payment-method" value="เครดิต"> เครดิต</label></div><div id="credit-fields-container"><div style="margin-top:10px;"><label for="credit-buyer-name" style="text-align:left;font-weight:bold;">ชื่อผู้ซื้อ (เครดิต):</label><input type="text" id="credit-buyer-name"></div><div style="margin-top:10px;"><label for="credit-due-days" style="text-align:left;font-weight:bold;">จำนวนวันเครดิต:</label><input type="number" id="credit-due-days" min="0" placeholder="เช่น 7, 15, 30"></div></div></div><button id="process-sale-btn">ยืนยันการขาย</button></div></div>`; 
+            document.getElementById('page-pos').innerHTML = `<h2>ขายสินค้า (Point of Sale)</h2><div class="pos-datetime-bar" style="display: flex; gap: 20px; flex-wrap: wrap; background-color: #f0f7ff; padding: 15px; border-radius: 8px; margin-bottom: 20px;"><div><label for="pos-date" style="text-align:left;font-weight:bold;">วันที่ขาย:</label><input type="date" id="pos-date"></div><div><label for="pos-time" style="text-align:left;font-weight:bold;">เวลา:</label><input type="time" id="pos-time"></div></div><div class="pos-layout"><div><form id="add-to-cart-form" style="max-width:none;"><label for="pos-product">เลือกสินค้า:</label><select id="pos-product" required></select><label for="pos-quantity">จำนวน:</label><input type="number" id="pos-quantity" value="1" min="1" required><div id="special-price-container" style="display:none; grid-template-columns: 150px 1fr;"><label for="special-price">ราคาขายใหม่:</label><div><input type="number" id="special-price" placeholder="กรอกราคาต่อหน่วย" min="0" step="any"><span id="current-price-info" style="font-size: 0.9em; color: #555; margin-left: 10px;"></span></div></div><div class="form-actions"><button type="submit" class="success">เพิ่มลงตะกร้า</button><button type="button" id="toggle-special-price-btn">ใช้ราคาพิเศษ</button></div></form><h3>รายการในตะกร้า</h3><div class="table-container"><table id="cart-table"><thead><tr><th>สินค้า</th><th>ราคาฯ</th><th>จำนวน</th><th>รวม</th><th>ลบ</th></tr></thead><tbody></tbody></table></div></div><div id="cart-summary"><div id="payment-method-container"><h4>ประเภทการชำระเงิน</h4><div class="payment-options-wrapper"><label><input type="radio" name="payment-method" value="เงินสด" checked> เงินสด</label><label><input type="radio" name="payment-method" value="เครดิต"> เครดิต</label></div><div id="credit-fields-container"><div style="margin-top:10px;"><label for="credit-buyer-name" style="text-align:left;font-weight:bold;">ชื่อผู้ซื้อ (เครดิต):</label><input type="text" id="credit-buyer-name"></div><div style="margin-top:10px;"><label for="credit-due-days" style="text-align:left;font-weight:bold;">จำนวนวันเครดิต:</label><input type="number" id="credit-due-days" min="0" placeholder="เช่น 7, 15, 30"></div></div></div><div class="cart-action-row"><span class="cart-total-label">สรุปยอด:</span><div id="cart-total">฿0.00</div><button id="process-sale-btn">ยืนยันการขาย</button></div></div></div>`; 
             document.getElementById('page-products').innerHTML = `<h2>จัดการสินค้า</h2> <form id="product-form"> <input type="hidden" id="product-id"> <label for="product-name">ชื่อสินค้า:</label> <input type="text" id="product-name" required> <label for="product-cost">ราคาทุน:</label> <input type="number" id="product-cost" min="0" step="0.01" required> <label for="product-price">ราคาขาย:</label> <input type="number" id="product-price" min="0" step="0.01" required> <label for="product-stock">จำนวนในสต็อก:</label> <input type="number" id="product-stock" min="0" required> <label for="product-unit">หน่วย:</label> <input type="text" id="product-unit" placeholder="เช่น ชิ้น, กล่อง" required> <div class="form-actions"> <button type="submit" class="success">บันทึกสินค้า</button> <button type="button" id="clear-product-form-btn" style="background-color:#6c757d;">เคลียร์ฟอร์ม</button> </div> </form> <div class="table-container"><table id="product-table"> <thead> <tr><th>ชื่อสินค้า</th><th>ราคาทุน</th><th>ราคาขาย</th><th>สต็อก</th><th>หน่วย</th><th>จัดการ</th></tr> </thead> <tbody></tbody> </table></div>`; document.getElementById('page-stock-in').innerHTML = `<h2>บันทึกการนำเข้าสินค้า</h2> <form id="stock-in-form"> <label for="stock-in-product">เลือกสินค้า:</label> <select id="stock-in-product" required></select> <label for="stock-in-quantity">จำนวน:</label> <input type="number" id="stock-in-quantity" min="1" required> <label for="stock-in-cost">ราคาทุนต่อหน่วย:</label> <input type="number" id="stock-in-cost" min="0" step="0.01" required> <div class="form-actions"> <button type="submit" class="success">บันทึกการนำเข้า</button> </div> </form> <h3>ประวัติการนำเข้าล่าสุด</h3> <div class="table-container"><table id="stock-in-history-table"> <thead> <tr><th>วันที่</th><th>สินค้า</th><th>จำนวน</th><th>ทุนต่อหน่วย</th><th>ยอดรวม</th></tr> </thead> <tbody></tbody> </table></div>`; document.getElementById('page-sales-history').innerHTML = `<h2>รายการขายย้อนหลัง</h2><div class="table-container"><table id="sales-history-table"><thead><tr><th>วันที่</th><th>เวลา</th><th>รายการสินค้า</th><th>ยอดขายรวม</th><th>กำไรรวม</th><th>ประเภทชำระ</th><th>คนขาย</th><th>จัดการ</th></tr></thead><tbody></tbody></table></div>`; document.getElementById('page-reports').innerHTML = `<h2>รายงานกำไร/ขาดทุน</h2> <form id="report-filter-form" style="grid-template-columns: auto auto auto 1fr; gap: 15px; max-width: none; align-items: end;"> <label style="text-align:left;">ตั้งแต่วันที่:<input type="date" id="report-start-date"></label> <label style="text-align:left;">ถึงวันที่:<input type="date" id="report-end-date"></label> <label style="text-align:left;">คนขาย:<select id="report-seller"><option value="all">ทั้งหมด</option></select></label> <button type="submit" style="background-color: #009688; justify-self: start; max-width: 150px;">สร้างรายงาน</button> </form> <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 20px; text-align: center;"> <div style="background: #f9f9f9; border: 1px solid var(--border-color); padding: 15px; border-radius: 5px;"> <h3>ยอดขายรวม</h3><p id="report-total-sales" style="font-size: 1.5em; font-weight: bold;">฿0.00</p> </div> <div style="background: #f9f9f9; border: 1px solid var(--border-color); padding: 15px; border-radius: 5px;"> <h3>ต้นทุนรวม</h3><p id="report-total-cost" style="font-size: 1.5em; font-weight: bold;">฿0.00</p> </div> <div style="background: #f9f9f9; border: 1px solid var(--border-color); padding: 15px; border-radius: 5px;"> <h3>กำไรสุทธิ</h3><p id="report-net-profit" style="font-size: 1.5em; font-weight: bold; color: var(--success-color);">฿0.00</p> </div> </div>`; document.getElementById('page-summary').innerHTML = `<h2>สรุปข้อมูลการขายแบบละเอียด</h2> <div class="summary-section"> <h3>สรุปด่วน</h3> <div class="summary-form-inline"> <button type="button" id="summary-today-btn" style="background-color: var(--warning-color);">สรุปวันนี้</button> <button type="button" id="summary-all-btn" style="background-color: #673ab7;">สรุปทั้งหมด</button> </div> </div> <div class="summary-section"> <h3>สรุปวันที่เลือก</h3> <div class="summary-form-inline"> <label>เลือกวันที่: <input type="date" id="summary-single-date"></label> <button type="button" id="summary-by-day-btn" style="background-color: #03a9f4;">สรุปวันที่เลือก</button> </div> </div> <div class="summary-section"> <h3>สรุปวันที่ถึงวันที่</h3> <div class="summary-form-inline"> <label>จากวันที่: <input type="date" id="summary-range-start"></label> <label>ถึงวันที่: <input type="date" id="summary-range-end"></label> <button type="button" id="summary-range-btn" style="background-color: #009688;">สรุปตามช่วงวัน</button> </div> </div>`; document.getElementById('page-users').innerHTML = `<h2>จัดการผู้ใช้</h2> <form id="user-form"> <input type="hidden" id="user-id"> <label for="user-username">ชื่อผู้ใช้:</label> <input type="text" id="user-username" required> <label for="user-password">รหัสผ่าน:</label> <input type="password" id="user-password" placeholder="เว้นว่างไว้ถ้าไม่ต้องการเปลี่ยน"> <label for="user-role">ประเภท:</label> <select id="user-role" required> <option value="seller">Seller</option> <option value="admin">Admin</option> </select> <div id="user-sales-period-container" style="display: none; grid-column: 1/-1;"> <h4>กำหนดระยะเวลาที่สามารถขายได้</h4> <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px; align-items: center;"> <label for="user-sales-start-date">วันที่เริ่มขาย:</label> <input type="date" id="user-sales-start-date"> <label for="user-sales-end-date">วันที่สิ้นสุด:</label> <input type="date" id="user-sales-end-date"> </div> </div> <div id="user-product-assignment-container" style="display: none; grid-column: 1/-1;"> <h4>กำหนดสินค้าที่สามารถขายได้</h4> <div id="user-product-assignment" style="max-height: 200px; overflow-y: auto; border: 1px solid #BFBFBF; padding: 10px; border-radius: 10px;"></div> </div> <div class="form-actions"> <button type="submit" class="success">บันทึกผู้ใช้</button> <button type="button" id="clear-user-form-btn" style="background-color:#6c757d;">เคลียร์ฟอร์ม</button> </div> </form> <div class="table-container"><table id="user-table"> <thead> <tr><th>ชื่อผู้ใช้</th><th>ประเภท</th><th>สินค้าที่ขายได้</th><th>ระยะเวลาที่ขายได้</th><th>จัดการ</th></tr> </thead> <tbody></tbody> </table></div>`; 
             document.getElementById('page-data').innerHTML = `<h2>จัดการข้อมูล</h2>
             <div class="data-management-section admin-only data-restore-section"><h3>โหลดข้อมูลจากไฟล์ (Restore)</h3><p style="color: var(--danger-color);"><b>คำเตือน:</b> การโหลดข้อมูลจากไฟล์จะเขียนทับข้อมูลทั้งหมดที่มีอยู่ในระบบปัจจุบัน!</p><input type="file" id="data-file-input" style="display: none;" accept=".json,application/json"><button type="button" id="load-from-file-btn" style="background-color: #E97132;">เลือกไฟล์สำรอง (.json)</button></div>
