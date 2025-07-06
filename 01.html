@@ -1985,8 +1985,6 @@ document.addEventListener('DOMContentLoaded', () => {
         updateSpecialPriceInfo() { const productId = document.getElementById('pos-product').value; const infoSpan = document.getElementById('current-price-info'); if (infoSpan) { if (productId) { const product = this.data.products.find(p => p.id == productId); infoSpan.textContent = `ราคาปกติ: ${this.formatNumberSmart(product.sellingPrice)} บาท`; } else { infoSpan.textContent = ''; } } },
         manualSaveToBrowser() { try { this.saveData(); this.showToast('✓ บันทึกข้อมูลลงในเบราว์เซอร์แล้ว'); } catch (error) { console.error("บันทึกข้อมูลไม่สำเร็จ:", error); this.showToast("⚠️ เกิดข้อผิดพลาดในการบันทึกข้อมูล", "error"); } },
         
-        // ================== START: MODIFIED/NEW FUNCTIONS FOR BACKUP/RESTORE ==================
-        
         saveBackupToFile() {
             const now = new Date();
             const year = now.getFullYear();
@@ -1998,7 +1996,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const sellerUsername = this.currentUser.username;
             const fullFileName = `pos_backup_${sellerUsername}_${dateTimeString}.json`;
 
-            // Data to save is the entire App.data object.
             const dataToSave = this.data;
             const blob = new Blob([JSON.stringify(dataToSave, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
@@ -2018,13 +2015,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const totalSold = new Map();
             const totalStockOut = new Map(); // NEW
 
-            // 1. Calculate total quantity for each product from all stock-ins.
             this.data.stockIns.forEach(si => {
                 const currentQty = totalStockIn.get(si.productId) || 0;
                 totalStockIn.set(si.productId, currentQty + si.quantity);
             });
 
-            // 2. Calculate total quantity for each product from all sales.
             this.data.sales.forEach(sale => {
                 sale.items.forEach(item => {
                     const currentQty = totalSold.get(item.productId) || 0;
@@ -2032,37 +2027,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             });
 
-            // 3. NEW: Calculate total manually removed quantity
             this.data.stockOuts.forEach(so => {
                 const currentQty = totalStockOut.get(so.productId) || 0;
                 totalStockOut.set(so.productId, currentQty + so.quantity);
             });
 
-            // 4. Update the stock for each product in the main product list.
             this.data.products.forEach(product => {
                 const initialStock = totalStockIn.get(product.id) || 0;
                 const soldQty = totalSold.get(product.id) || 0;
-                const stockOutQty = totalStockOut.get(product.id) || 0; // NEW
-                product.stock = initialStock - soldQty - stockOutQty; // UPDATED formula
+                const stockOutQty = totalStockOut.get(product.id) || 0;
+                product.stock = initialStock - soldQty - stockOutQty;
             });
             console.log("Stock recalculated for all products based on history.");
         },
         
         _mergeSingleArray(currentArray, newArray, key = 'id') {
-            if (!newArray || !Array.isArray(newArray)) return; // Robustness check
+            if (!newArray || !Array.isArray(newArray)) return;
             const currentIds = new Set(currentArray.map(item => item[key]));
             
             newArray.forEach(newItem => {
-                if (!newItem || typeof newItem[key] === 'undefined') return; // Skip invalid items
+                if (!newItem || typeof newItem[key] === 'undefined') return;
 
                 if (currentIds.has(newItem[key])) {
-                    // If item exists, update it (replace).
                     const index = currentArray.findIndex(currentItem => currentItem[key] === newItem[key]);
                     if (index > -1) {
                         currentArray[index] = newItem;
                     }
                 } else {
-                    // If item is new, add it.
                     currentArray.push(newItem);
                     currentIds.add(newItem[key]);
                 }
@@ -2070,27 +2061,22 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         
         mergeData(dataFromFile) {
-            // Merge transactional data and reference data first.
             this._mergeSingleArray(this.data.users, dataFromFile.users, 'id');
             this._mergeSingleArray(this.data.stores, dataFromFile.stores, 'id');
             this._mergeSingleArray(this.data.sales, dataFromFile.sales, 'id');
             this._mergeSingleArray(this.data.stockIns, dataFromFile.stockIns, 'id');
-            this._mergeSingleArray(this.data.stockOuts, dataFromFile.stockOuts, 'id'); // NEW
+            this._mergeSingleArray(this.data.stockOuts, dataFromFile.stockOuts, 'id');
             
-            // Special handling for products: merge info, but ignore stock from file.
-            // We will add new products and update info for existing ones.
             if (dataFromFile.products && Array.isArray(dataFromFile.products)) {
                 dataFromFile.products.forEach(newProduct => {
                     if (!newProduct || typeof newProduct.id === 'undefined') return;
                     const existingProduct = this.data.products.find(p => p.id === newProduct.id);
                     if (existingProduct) {
-                        // Product exists, update its info BUT NOT THE STOCK.
                         existingProduct.name = newProduct.name;
                         existingProduct.costPrice = newProduct.costPrice;
                         existingProduct.sellingPrice = newProduct.sellingPrice;
                         existingProduct.unit = newProduct.unit;
                     } else {
-                        // New product, add it to the list. Its stock will be calculated.
                         this.data.products.push(newProduct);
                     }
                 });
@@ -2107,13 +2093,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     const content = e.target.result;
                     const importedData = JSON.parse(content);
 
-                    // Basic validation of the imported file structure
                     if (importedData && typeof importedData === 'object' && 'users' in importedData && 'products' in importedData && 'sales' in importedData) {
                         const confirmationMessage = "คุณต้องการรวมข้อมูลจากไฟล์นี้เข้ากับข้อมูลปัจจุบันหรือไม่?\n\n- ข้อมูลที่ซ้ำกันจะถูกทับด้วยข้อมูลจากไฟล์\n- ข้อมูลใหม่จะถูกเพิ่มเข้ามา\n- **สต็อกสินค้าจะถูกคำนวณใหม่ทั้งหมด** จากประวัติการนำเข้าและประวัติการขายเพื่อให้ถูกต้องที่สุด\n\nยืนยันเพื่อดำเนินการต่อ?";
                         
                         if (confirm(confirmationMessage)) {
                             this.mergeData(importedData);
-                            this.recalculateAllStock(); // <-- Crucial step: recalculate stock after merging history.
+                            this.recalculateAllStock();
                             this.saveData();
                             this.showToast('รวมข้อมูลและคำนวณสต็อกใหม่สำเร็จ! กำลังรีโหลด...', 'success');
                             setTimeout(() => location.reload(), 2000);
@@ -2124,14 +2109,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 } catch (error) {
                     this.showToast("เกิดข้อผิดพลาด: " + error.message, "error");
                 } finally {
-                    // Reset the file input to allow selecting the same file again
                     event.target.value = '';
                 }
             };
             reader.onerror = () => this.showToast("ไม่สามารถอ่านไฟล์ได้", "error");
             reader.readAsText(file, 'UTF-8');
         },
-        // =================== END: MODIFIED/NEW FUNCTIONS FOR BACKUP/RESTORE ==================
 
         openResetModal() {
             document.getElementById('reset-sales-checkbox').checked = false;
@@ -2155,7 +2138,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             let confirmationMessage = "คุณกำลังจะลบข้อมูลต่อไปนี้อย่างถาวร:\n";
             if(resetSales) confirmationMessage += "\n- ประวัติการขายทั้งหมด";
-            if(resetStockIns) confirmationMessage += "\n- ประวัติการนำเข้าทั้งหมด";
+            if(resetStockIns) confirmationMessage += "\n- ประวัติการนำเข้าและปรับออกทั้งหมด";
             if(resetProducts) confirmationMessage += "\n- สินค้าทั้งหมด";
             if(resetSellers) confirmationMessage += "\n- ผู้ขายทั้งหมด (ยกเว้น Admin)";
             if(resetStores) confirmationMessage += "\n- ร้านค้าทั้งหมด";
@@ -2164,13 +2147,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (userConfirmation === 'CONFIRM') {
                 if (resetSales) { this.data.sales = []; }
-                if (resetStockIns) { this.data.stockIns = []; }
+                if (resetStockIns) { this.data.stockIns = []; this.data.stockOuts = []; }
                 if (resetProducts) { this.data.products = []; }
                 if (resetSellers) { this.data.users = this.data.users.filter(u => u.role !== 'seller'); }
                 if (resetStores) { this.data.stores = []; }
-
-                // Also reset the new stock-out history if sales/products are reset
-                if (resetSales || resetProducts || resetStockIns) { this.data.stockOuts = []; }
                 
                 this.saveData();
                 this.closeResetModal();
@@ -2181,7 +2161,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         },
         
-        // =================== START: NEW STOCK REPORT FUNCTIONS ==================
         renderStockSummaryReport() {
             const container = document.getElementById('stock-summary-report-container');
             if (!container) return;
@@ -2250,10 +2229,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.recalculateAllStock();
                 this.saveData();
                 this.showToast('คำนวณและบันทึกสต็อกใหม่เรียบร้อยแล้ว!', 'success');
-                this.renderStockSummaryReport(); // Re-render the report to show it's fixed
+                if(document.getElementById('admin-stock-report-content').classList.contains('active')) {
+                    this.renderStockSummaryReport();
+                }
             }
         },
-        // =================== END: NEW STOCK REPORT FUNCTIONS ==================
 
         renderProductTable() { const tbody = document.querySelector('#product-table tbody'); if (!tbody) return; tbody.innerHTML = ''; this.data.products.forEach(p => { const tr = document.createElement('tr'); tr.innerHTML = `<td data-label="ชื่อสินค้า">${p.name}</td><td data-label="ราคาทุน">${this.formatNumberSmart(p.costPrice)}</td><td data-label="ราคาขาย">${this.formatNumberSmart(p.sellingPrice)}</td><td data-label="สต็อก">${this.formatNumberSmart(p.stock)}</td><td data-label="หน่วย">${p.unit}</td><td data-label="จัดการ"><div class="action-buttons"><button class="edit-product-btn" data-id="${p.id}" style="background-color: var(--warning-color);">แก้ไข</button><button class="danger delete-product-btn" data-id="${p.id}">ลบ</button></div></td>`; tbody.appendChild(tr); }); },
         
@@ -2266,7 +2246,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 name: document.getElementById('product-name').value,
                 costPrice: parseFloat(document.getElementById('product-cost').value),
                 sellingPrice: parseFloat(document.getElementById('product-price').value),
-                stock: parseInt(document.getElementById('product-stock').value),
                 unit: document.getElementById('product-unit').value
             };
 
@@ -2278,28 +2257,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (oldProduct.name !== newName) {
                         this.data.sales.forEach(sale => {
                             sale.items.forEach(item => {
-                                if (item.productId === id) { 
-                                    item.name = newName;
-                                }
+                                if (item.productId === id) { item.name = newName; }
                             });
                         });
                         this.data.stockIns.forEach(stockIn => {
-                            if (stockIn.productId === id) { 
-                                stockIn.productName = newName;
-                            }
+                            if (stockIn.productId === id) { stockIn.productName = newName; }
                         });
                         this.data.stockOuts.forEach(stockOut => {
-                            if (stockOut.productId === id) { 
-                                stockOut.productName = newName;
-                            }
+                            if (stockOut.productId === id) { stockOut.productName = newName; }
                         });
-                        
                         this.showToast('อัปเดตชื่อสินค้าในประวัติย้อนหลังเรียบร้อย');
                     }
                     this.data.products[index] = { ...this.data.products[index], ...newProductData };
                 }
             } else {
                 newProductData.id = Date.now();
+                newProductData.stock = 0; // Set initial stock to 0 for new products
                 this.data.products.push(newProductData);
             }
             this.saveData();
@@ -2307,8 +2280,8 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('product-form').reset();
             document.getElementById('product-id').value = '';
         },
-        editProduct(id) { const product = this.data.products.find(p => p.id == id); if(product) { document.getElementById('product-id').value = product.id; document.getElementById('product-name').value = product.name; document.getElementById('product-cost').value = product.costPrice; document.getElementById('product-price').value = product.sellingPrice; document.getElementById('product-stock').value = product.stock; document.getElementById('product-unit').value = product.unit; document.getElementById('product-name').focus(); } },
-        deleteProduct(id) { if(confirm('คุณแน่ใจหรือไม่ว่าต้องการลบสินค้านี้?')) { this.data.products = this.data.products.filter(p => p.id != id); this.saveData(); this.renderProductTable(); } },
+        editProduct(id) { const product = this.data.products.find(p => p.id == id); if(product) { document.getElementById('product-id').value = product.id; document.getElementById('product-name').value = product.name; document.getElementById('product-cost').value = product.costPrice; document.getElementById('product-price').value = product.sellingPrice; document.getElementById('product-unit').value = product.unit; document.getElementById('product-name').focus(); } },
+        deleteProduct(id) { if(confirm('คุณแน่ใจหรือไม่ว่าต้องการลบสินค้านี้? การกระทำนี้จะลบสินค้าออกจากระบบ แต่จะไม่ลบประวัติการขายหรือการนำเข้าที่เกี่ยวข้อง')) { this.data.products = this.data.products.filter(p => p.id != id); this.saveData(); this.renderProductTable(); } },
         
         renderStockIn() { 
             const productSelect = document.getElementById('stock-in-product'); 
@@ -2658,7 +2631,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         fillPages(){ 
             document.getElementById('page-pos').innerHTML = `<h2>ขายสินค้า (Point of Sale)</h2><div class="pos-layout"><div><form id="add-to-cart-form" style="max-width:none;"><label for="pos-date">วันที่ขาย:</label><input type="date" id="pos-date"><label for="pos-time">เวลา:</label><input type="time" id="pos-time"><label for="pos-product">เลือกสินค้า:</label><select id="pos-product" required></select><label for="pos-quantity">จำนวน:</label><input type="number" id="pos-quantity" value="1" min="1" required><div id="special-price-container" style="display:none; grid-template-columns: 150px 1fr;"><label for="special-price">ราคาขายใหม่:</label><div><input type="number" id="special-price" placeholder="กรอกราคาต่อหน่วย" min="0" step="any"><span id="current-price-info" style="font-size: 0.9em; color: #555; margin-left: 10px;"></span></div></div><div class="form-actions"><button type="submit" class="success">เพิ่มลงตะกร้า</button><button type="button" id="toggle-special-price-btn">ใช้ราคาพิเศษ</button></div></form><h3>รายการในตะกร้า</h3><div class="table-container"><table id="cart-table"><thead><tr><th>สินค้า</th><th>ราคาฯ</th><th>จำนวน</th><th>รวม</th><th>ลบ</th></tr></thead><tbody></tbody></table></div></div><div id="cart-summary"><div id="payment-method-container"><h4>ประเภทการชำระเงิน</h4><div class="payment-options-wrapper"><label><input type="radio" name="payment-method" value="เงินสด" checked> เงินสด</label><label><input type="radio" name="payment-method" value="เงินโอน"> เงินโอน</label><label><input type="radio" name="payment-method" value="เครดิต"> เครดิต</label></div><div id="transfer-fields-container"><div style="margin-top:10px;"><label for="transfer-name" style="text-align:left;font-weight:bold;">ชื่อผู้โอน:</label><input type="text" id="transfer-name"></div></div><div id="credit-fields-container"><div style="margin-top:10px;"><label for="credit-buyer-name" style="text-align:left;font-weight:bold;">ชื่อผู้ซื้อ (เครดิต):</label><input type="text" id="credit-buyer-name"></div><div style="margin-top:10px;"><label for="credit-due-days" style="text-align:left;font-weight:bold;">จำนวนวันเครดิต:</label><input type="number" id="credit-due-days" min="0" placeholder="เช่น 7, 15, 30"></div></div></div><div class="cart-action-row"><span class="cart-total-label">สรุปยอด:</span><div id="cart-total">฿0.00</div><button id="process-sale-btn">ยืนยันการขาย</button></div></div></div>`; 
-            document.getElementById('page-products').innerHTML = `<h2>จัดการสินค้า</h2> <form id="product-form"> <input type="hidden" id="product-id"> <label for="product-name">ชื่อสินค้า:</label> <input type="text" id="product-name" required> <label for="product-cost">ราคาทุน:</label> <input type="number" id="product-cost" min="0" step="0.01" required> <label for="product-price">ราคาขาย:</label> <input type="number" id="product-price" min="0" step="0.01" required> <label for="product-stock">จำนวนในสต็อก:</label> <input type="number" id="product-stock" min="0" required> <label for="product-unit">หน่วย:</label> <input type="text" id="product-unit" placeholder="เช่น ชิ้น, กล่อง" required> <div class="form-actions"> <button type="submit" class="success">บันทึกสินค้า</button> <button type="button" id="clear-product-form-btn" style="background-color:#6c757d;">เคลียร์ฟอร์ม</button> </div> </form> <div class="table-container"><table id="product-table"> <thead> <tr><th>ชื่อสินค้า</th><th>ราคาทุน</th><th>ราคาขาย</th><th>สต็อก</th><th>หน่วย</th><th>จัดการ</th></tr> </thead> <tbody></tbody> </table></div>`; 
+            document.getElementById('page-products').innerHTML = `<h2>จัดการสินค้า</h2> <p style="text-align:center; margin-top:-15px; margin-bottom:20px;">ในหน้านี้ใช้สำหรับสร้างและแก้ไขรายละเอียดสินค้า (ชื่อ, ราคา, หน่วย) เท่านั้น <br>การเพิ่มสต็อกสินค้าต้องทำผ่านหน้า "นำเข้าสินค้า" เท่านั้น</p><form id="product-form"> <input type="hidden" id="product-id"> <label for="product-name">ชื่อสินค้า:</label> <input type="text" id="product-name" required> <label for="product-cost">ราคาทุน:</label> <input type="number" id="product-cost" min="0" step="0.01" required> <label for="product-price">ราคาขาย:</label> <input type="number" id="product-price" min="0" step="0.01" required> <label for="product-unit">หน่วย:</label> <input type="text" id="product-unit" placeholder="เช่น ชิ้น, กล่อง" required> <div class="form-actions"> <button type="submit" class="success">บันทึกสินค้า</button> <button type="button" id="clear-product-form-btn" style="background-color:#6c757d;">เคลียร์ฟอร์ม</button> </div> </form> <div class="table-container"><table id="product-table"> <thead> <tr><th>ชื่อสินค้า</th><th>ราคาทุน</th><th>ราคาขาย</th><th>สต็อก</th><th>หน่วย</th><th>จัดการ</th></tr> </thead> <tbody></tbody> </table></div>`; 
             document.getElementById('page-stock-in').innerHTML = `<h2>บันทึกการนำเข้าสินค้า</h2> <form id="stock-in-form"> <label for="stock-in-product">เลือกสินค้า:</label> <select id="stock-in-product" required></select> <label for="stock-in-quantity">จำนวน:</label> <input type="number" id="stock-in-quantity" min="1" required> <label for="stock-in-cost">ราคาทุนต่อหน่วย:</label> <input type="number" id="stock-in-cost" min="0" step="0.01" required> <div class="form-actions"> <button type="submit" class="success">บันทึกการนำเข้า</button> </div> </form> <h3>ประวัติการนำเข้าล่าสุด</h3> <div class="table-container"><table id="stock-in-history-table"> <thead> <tr><th>วันที่</th><th>เวลา</th><th>สินค้า</th><th>จำนวน</th><th>ทุนต่อหน่วย</th><th>ยอดรวม</th></tr> </thead> <tbody></tbody> </table></div>`; 
             document.getElementById('page-stock-out').innerHTML = `<h2>ปรับสต็อก (นำออก)</h2> <form id="stock-out-form"> <label for="stock-out-product">เลือกสินค้า:</label> <select id="stock-out-product" required></select> <label for="stock-out-quantity">จำนวนที่นำออก:</label> <input type="number" id="stock-out-quantity" min="1" required> <label for="stock-out-reason">เหตุผล:</label> <input type="text" id="stock-out-reason" placeholder="เช่น หมดอายุ, ชำรุด, นับสต็อก" required> <div class="form-actions"> <button type="submit" class="danger">ยืนยันการนำออก</button> </div> </form> <h3>ประวัติการนำออกล่าสุด</h3> <div class="table-container"><table id="stock-out-history-table"> <thead> <tr><th>วันที่</th><th>เวลา</th><th>สินค้า</th><th>จำนวน</th><th>เหตุผล</th></tr> </thead> <tbody></tbody> </table></div>`;
             document.getElementById('page-sales-history').innerHTML = `<h2>รายการขายย้อนหลัง</h2><div class="table-container"><table id="sales-history-table"><thead><tr><th>วันที่</th><th>เวลา</th><th>รายการสินค้า</th><th>ยอดขายรวม</th><th>กำไรรวม</th><th>ประเภทชำระ</th><th>คนขาย</th><th>ร้านค้า</th><th>จัดการ</th></tr></thead><tbody></tbody></table></div>`; 
