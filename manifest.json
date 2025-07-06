@@ -1,6 +1,6 @@
 {
-  "name": "๋Juckim",
-  "short_name": "juckim",
+  "name":"๋Juckim",
+  "short_name":"juckim",
   "description": "ชุดเครื่องมือและแอปพลิเคชันโดย Juckim",
   "start_url": "./01.html",
   "display": "standalone",
