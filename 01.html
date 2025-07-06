@@ -189,7 +189,7 @@
         th, td {
             border: 1px solid var(--border-color);
             padding: 6px 8px; 
-            text-align: left;
+            text-align: center; 
             vertical-align: middle;
             white-space: nowrap; 
             font-size: clamp(0.8rem, 1.5vw, 0.9rem); 
@@ -210,7 +210,7 @@
              min-width: 120px;
         }
 
-        /* min-width and alignment for number columns */
+        /* min-width for number columns (REMOVED text-align: right) */
         #page-pos #cart-table td:nth-child(2), /* Price */
         #page-pos #cart-table td:nth-child(3), /* Qty */
         #page-pos #cart-table td:nth-child(4), /* Total */
@@ -224,7 +224,6 @@
         #page-stock-in #stock-in-history-table td:nth-child(4), /* Cost */
         #page-stock-in #stock-in-history-table td:nth-child(5) { /* Total */
             min-width: 70px;
-            text-align: right;
         }
         .action-buttons {
              min-width: 100px;
@@ -233,7 +232,6 @@
         
         th {
             background-color: #f2f2f2;
-            text-align: center;
         }
         
         .action-buttons button { margin-right: 5px; padding: 5px 10px; font-size: 0.9em; margin-top: 5px;}
@@ -294,8 +292,23 @@
         }
 
         #credit-fields-container, #transfer-fields-container { margin-top: 10px; display: none; }
-        
-        /* --- REMOVED: Unnecessary styles for POS form top row --- */
+
+        #report-filter-form {
+            display: grid;
+            grid-template-columns: auto auto auto 1fr; /* Default for desktop */
+            gap: 15px;
+            max-width: none;
+            align-items: end;
+        }
+        #report-filter-form label {
+            text-align: left;
+            font-weight: normal;
+        }
+        #report-generate-btn {
+            background-color: #009688;
+            justify-self: start;
+            max-width: 150px;
+        }
 
         .data-management-section { border: 1px solid var(--border-color); padding: 20px; margin-top: 20px; border-radius: 8px; background: #fafafa; text-align: center; }
         .data-management-section h3 { margin-top: 0; border-bottom: 1px solid #BFBFBF; padding-bottom: 10px; }
@@ -310,7 +323,7 @@
         /* MODAL STYLES */
         .modal-overlay { position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); display: none; justify-content: center; align-items: center; padding: 5px; overflow-y: auto; }
         .modal-content-container { background-color: transparent; padding: 0; border: none; box-shadow: none; display: flex; flex-direction: column; align-items: center; margin: auto 0; width: 100%; max-width: 950px; }
-        #modalBodyContent { background-color: #FAFAD2; border: 3px solid #4CAF50; border-radius: 10px; padding: 20px; width: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.25); max-height: 85vh; overflow-y: auto; }
+        #modalBodyContent { background-color: #FAFAD2; border: 3px solid #4CAF50; border-radius: 10px; padding: 15px; width: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.25); max-height: 85vh; overflow-y: auto; }
         #modalBodyContent, #modalBodyContent * { color: blue !important; }
         
         #modalBodyContent h2 {
@@ -427,13 +440,11 @@
             #page-pos #cart-table td:first-child { /* Product Name */
                 white-space: normal !important;      /* FORCE wrapping for long names */
                 word-break: break-word !important;   /* FORCE word breaking */
-                text-align: left;
                 min-width: 0; /* Override any desktop min-width */
             }
             #page-pos #cart-table td:nth-child(2), /* Price */
             #page-pos #cart-table td:nth-child(3), /* Qty */
             #page-pos #cart-table td:nth-child(4) { /* Total */
-                 text-align: right;
                  white-space: nowrap;
             }
             #page-pos #cart-table .action-buttons {
@@ -524,16 +535,133 @@
                 width: auto; 
             }
             
-            /* MODAL TABLE RESPONSIVE STYLES (Keep as is) */
-            #modalBodyContent table { width: 100%; table-layout: auto; }
-            #modalBodyContent table thead { display: table-header-group; }
-            #modalBodyContent table tr { display: table-row; border: none; margin-bottom: 0; box-shadow: none; padding: 0; background-color: transparent; }
-            #modalBodyContent table th, #modalBodyContent table td { display: table-cell; border: 1px solid var(--border-color); padding: 2px 4px; font-size: clamp(8px, 2.3vw, 12px); white-space: nowrap; text-align: center; vertical-align: middle; }
+            /* MODAL (POPUP) RESPONSIVE STYLES */
+            
+            /* --- General Compactness --- */
+            #modalBodyContent { padding: 10px; }
+            #modalBodyContent h2 {
+                font-size: 1.0rem; 
+                padding-bottom: 4px;
+                margin-bottom: 6px;
+            }
+            #modalBodyContent table th {
+                font-size: clamp(8px, 2.2vw, 10px); 
+                padding: 2px 3px;
+            }
+            #modalBodyContent table td {
+                padding: 2px 3px;
+                vertical-align: middle;
+            }
             #modalBodyContent table td::before { display: none; }
-            #modalBodyContent .product-summary-table th:first-child, #modalBodyContent .product-summary-table td:first-child,
-            #modalBodyContent .credit-details-table th:nth-child(2), #modalBodyContent .credit-details-table td:nth-child(2),
-            #modalBodyContent .credit-details-table th:nth-child(3), #modalBodyContent .credit-details-table td:nth-child(3),
-            #modalBodyContent .credit-details-table th:nth-child(4), #modalBodyContent .credit-details-table td:nth-child(4) { text-align: left; white-space: normal; }
+            #modalBodyContent table thead,
+            #modalBodyContent table tr,
+            #modalBodyContent table th, 
+            #modalBodyContent table td {
+                display: table-cell; /* Force table display */
+            }
+            #modalBodyContent table thead { display: table-header-group; }
+            #modalBodyContent table tr { display: table-row; }
+
+
+            /* --- Universal Table Layout Rules for ALL Summary Popups --- */
+            #modalBodyContent .credit-details-table,
+            #modalBodyContent .transfer-details-table,
+            #modalBodyContent .product-summary-table {
+                table-layout: fixed;
+                width: 100%;
+            }
+            /* Universal TD rule: allow wrapping by default and handle long words. */
+            #modalBodyContent .credit-details-table td,
+            #modalBodyContent .transfer-details-table td,
+            #modalBodyContent .product-summary-table td {
+                word-break: break-word;
+                white-space: normal; /* Default to wrapping */
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            /* --- PRODUCT SUMMARY Table (For BOTH Admin & Seller) --- */
+            #modalBodyContent .product-summary-table th:nth-of-type(1),
+            #modalBodyContent .product-summary-table td:nth-of-type(1) { width: 30%; } /* Name (wraps) */
+            
+            #modalBodyContent .product-summary-table th:nth-of-type(2),
+            #modalBodyContent .product-summary-table td:nth-of-type(2),
+            #modalBodyContent .product-summary-table th:nth-of-type(3),
+            #modalBodyContent .product-summary-table td:nth-of-type(3),
+            #modalBodyContent .product-summary-table th:nth-of-type(4),
+            #modalBodyContent .product-summary-table td:nth-of-type(4),
+            #modalBodyContent .product-summary-table th:nth-of-type(5),
+            #modalBodyContent .product-summary-table td:nth-of-type(5) { 
+                width: 10%; 
+                white-space: nowrap; /* No wrap for quantities */
+            }
+            
+            #modalBodyContent .product-summary-table th:nth-of-type(6),
+            #modalBodyContent .product-summary-table td:nth-of-type(6) { width: 15%; white-space: nowrap; } /* Value (no wrap) */
+            
+            #modalBodyContent .product-summary-table th:nth-of-type(7),
+            #modalBodyContent .product-summary-table td:nth-of-type(7) { width: 15%; white-space: nowrap; } /* Stock (no wrap) */
+            
+            /* --- 6-COLUMN CREDIT DETAILS Table (For Seller Credit Summary & Admin Credit Summary) --- */
+            #modalBodyContent .credit-details-table:not(.credit-details-sub-table) th:nth-of-type(1),
+            #modalBodyContent .credit-details-table:not(.credit-details-sub-table) td:nth-of-type(1) { width: 13%; white-space: nowrap; } /* Date */
+            
+            #modalBodyContent .credit-details-table:not(.credit-details-sub-table) th:nth-of-type(2),
+            #modalBodyContent .credit-details-table:not(.credit-details-sub-table) td:nth-of-type(2) { width: 20%; } /* Buyer (wraps) */
+            
+            #modalBodyContent .credit-details-table:not(.credit-details-sub-table) th:nth-of-type(3),
+            #modalBodyContent .credit-details-table:not(.credit-details-sub-table) td:nth-of-type(3) { width: 17%; } /* Seller (wraps) */
+            
+            #modalBodyContent .credit-details-table:not(.credit-details-sub-table) th:nth-of-type(4),
+            #modalBodyContent .credit-details-table:not(.credit-details-sub-table) td:nth-of-type(4) { width: 22%; } /* Items (wraps) */
+            
+            #modalBodyContent .credit-details-table:not(.credit-details-sub-table) th:nth-of-type(5),
+            #modalBodyContent .credit-details-table:not(.credit-details-sub-table) td:nth-of-type(5) { width: 15%; white-space: nowrap; } /* Amount */
+            
+            #modalBodyContent .credit-details-table:not(.credit-details-sub-table) th:nth-of-type(6),
+            #modalBodyContent .credit-details-table:not(.credit-details-sub-table) td:nth-of-type(6) { width: 13%; white-space: nowrap; } /* Due Date */
+            
+            /* --- 5-COLUMN CREDIT SUB-TABLE (in Admin POS Summary) --- */
+            #modalBodyContent .credit-details-sub-table th:nth-of-type(1),
+            #modalBodyContent .credit-details-sub-table td:nth-of-type(1) { width: 15%; white-space: nowrap; } /* Date */
+            
+            #modalBodyContent .credit-details-sub-table th:nth-of-type(2),
+            #modalBodyContent .credit-details-sub-table td:nth-of-type(2) { width: 20%; } /* Buyer (wraps) */
+            
+            #modalBodyContent .credit-details-sub-table th:nth-of-type(3),
+            #modalBodyContent .credit-details-sub-table td:nth-of-type(3) { width: 35%; } /* Items (wraps) */
+            
+            #modalBodyContent .credit-details-sub-table th:nth-of-type(4),
+            #modalBodyContent .credit-details-sub-table td:nth-of-type(4) { width: 15%; white-space: nowrap; } /* Amount */
+            
+            #modalBodyContent .credit-details-sub-table th:nth-of-type(5),
+            #modalBodyContent .credit-details-sub-table td:nth-of-type(5) { width: 15%; white-space: nowrap; } /* Due Date */
+
+            /* --- TRANSFER DETAILS Table (For BOTH Admin & Seller) --- */
+            #modalBodyContent .transfer-details-table th:nth-of-type(1),
+            #modalBodyContent .transfer-details-table td:nth-of-type(1) { width: 15%; white-space: nowrap; } /* Date */
+            
+            #modalBodyContent .transfer-details-table th:nth-of-type(2),
+            #modalBodyContent .transfer-details-table td:nth-of-type(2) { width: 25%; } /* Transferor (wraps) */
+            
+            #modalBodyContent .transfer-details-table th:nth-of-type(3),
+            #modalBodyContent .transfer-details-table td:nth-of-type(3) { width: 20%; } /* Seller (wraps) */
+            
+            #modalBodyContent .transfer-details-table th:nth-of-type(4),
+            #modalBodyContent .transfer-details-table td:nth-of-type(4) { width: 25%; } /* Items (wraps) */
+            
+            #modalBodyContent .transfer-details-table th:nth-of-type(5),
+            #modalBodyContent .transfer-details-table td:nth-of-type(5) { width: 15%; white-space: nowrap; } /* Amount */
+            
+            #report-filter-form {
+                grid-template-columns: 1fr; /* Stack into a single column on mobile */
+                gap: 10px;
+            }
+            #report-generate-btn {
+                width: 100%;
+                max-width: none; /* Override desktop max-width */
+                justify-self: stretch; /* Make it fill the grid cell */
+            }
         }
     </style>
 </head>
@@ -825,9 +953,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 creditRows += `<tr>
                     <td data-label="วันที่">${formatDate(s.date)}</td>
-                    <td data-label="ผู้ซื้อ" style="text-align:left;">${s.buyerName || '-'}</td>
-                    <td data-label="ผู้ขาย" style="text-align:left;">${s.sellerName || '-'}</td>
-                    <td data-label="รายการ" style="text-align:left;">${itemsList}</td>
+                    <td data-label="ผู้ซื้อ">${s.buyerName || '-'}</td>
+                    <td data-label="ผู้ขาย">${s.sellerName || '-'}</td>
+                    <td data-label="รายการ">${itemsList}</td>
                     <td data-label="ยอดเงิน (บาท)">${formatCurrency(s.total)}</td>
                     <td data-label="กำหนดชำระ">${formatDate(s.creditDueDate)}</td>
                 </tr>`;
@@ -962,7 +1090,6 @@ document.addEventListener('DOMContentLoaded', () => {
             this.openSummaryOutputModal();
         },
 
-        // ================== START: NEW/MODIFIED FUNCTIONS ==================
         summarizeAllTransfersByAdmin() {
             const sellerId = document.getElementById('summary-transfer-seller').value;
             const startDateStr = document.getElementById('summary-transfer-start-date').value;
@@ -1095,9 +1222,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 transferRows += `<tr>
                     <td data-label="วันที่">${formatDate(s.date)}</td>
-                    <td data-label="ผู้โอน" style="text-align:left;">${s.transferorName || '-'}</td>
-                    <td data-label="ผู้ขาย" style="text-align:left;">${s.sellerName || '-'}</td>
-                    <td data-label="รายการ" style="text-align:left;">${itemsList}</td>
+                    <td data-label="ผู้โอน">${s.transferorName || '-'}</td>
+                    <td data-label="ผู้ขาย">${s.sellerName || '-'}</td>
+                    <td data-label="รายการ">${itemsList}</td>
                     <td data-label="ยอดเงิน (บาท)">${formatCurrency(s.total)}</td>
                 </tr>`;
             });
@@ -1173,7 +1300,6 @@ document.addEventListener('DOMContentLoaded', () => {
             URL.revokeObjectURL(link.href);
             this.showToast(`ส่งออกไฟล์ CSV '${fileName}' สำเร็จ`);
         },
-        // ================== END: NEW/MODIFIED FUNCTIONS ==================
 
         generatePosSummaryData(startDate, endDate, sellerIdFilter = null) {
             const summary = { grandTotalSales: 0, grandTotalProfit: 0, grandTotalCash: 0, grandTotalCredit: 0, grandTotalTransfer: 0, salesCount: 0, sellerSummary: {} };
@@ -1290,7 +1416,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 let productTableRows = '';
                 Object.values(sellerData.productSummary).forEach(p => {
                     const formattedStock = p.stock === 'N/A' ? 'N/A' : this.formatNumberSmart(p.stock);
-                    productTableRows += `<tr><td data-label="สินค้า" style="text-align:left;">${p.name}</td><td data-label="ขายเงินสด">${this.formatNumberSmart(p.cashQty)} ${p.unit}</td><td data-label="ขายเงินโอน">${this.formatNumberSmart(p.transferQty)} ${p.unit}</td><td data-label="ขายเครดิต">${this.formatNumberSmart(p.creditQty)} ${p.unit}</td><td data-label="รวม">${this.formatNumberSmart(p.totalQty)} ${p.unit}</td><td data-label="ยอดขาย (บาท)">${formatCurrency(p.totalValue)}</td><td data-label="สต็อกคงเหลือ">${formattedStock} ${p.unit}</td></tr>`;
+                    productTableRows += `<tr><td data-label="สินค้า">${p.name}</td><td data-label="ขายเงินสด">${this.formatNumberSmart(p.cashQty)} ${p.unit}</td><td data-label="ขายเงินโอน">${this.formatNumberSmart(p.transferQty)} ${p.unit}</td><td data-label="ขายเครดิต">${this.formatNumberSmart(p.creditQty)} ${p.unit}</td><td data-label="รวม">${this.formatNumberSmart(p.totalQty)} ${p.unit}</td><td data-label="ยอดขาย (บาท)">${formatCurrency(p.totalValue)}</td><td data-label="สต็อกคงเหลือ">${formattedStock} ${p.unit}</td></tr>`;
                 });
 
                 let profitOrCommissionHtml;
@@ -1309,9 +1435,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     let creditRows = '';
                     creditSalesDetails.forEach(s => {
                         const itemsList = s.items.map(item => { const product = this.data.products.find(p => p.id === item.productId); const unit = product ? product.unit : 'หน่วย'; return `${item.name}( ${this.formatNumberSmart(item.quantity)} ${unit} )`; }).join(', ');
-                        creditRows += `<tr><td data-label="วันที่">${this.formatThaiDateShortYear(s.date)}</td><td data-label="ผู้ซื้อ" style="text-align:left;">${s.buyerName || '-'}</td><td data-label="รายการ" style="text-align:left;">${itemsList}</td><td data-label="ยอดเงิน (บาท)">${formatCurrency(s.total)}</td><td data-label="กำหนดชำระ">${this.formatThaiDateShortYear(s.creditDueDate)}</td></tr>`;
+                        creditRows += `<tr><td data-label="วันที่">${this.formatThaiDateShortYear(s.date)}</td><td data-label="ผู้ซื้อ">${s.buyerName || '-'}</td><td data-label="รายการ">${itemsList}</td><td data-label="ยอดเงิน (บาท)">${formatCurrency(s.total)}</td><td data-label="กำหนดชำระ">${this.formatThaiDateShortYear(s.creditDueDate)}</td></tr>`;
                     });
-                    creditDetailsHtml = `<div style="margin-top: 15px; text-align:center;"><h2>รายละเอียดลูกหนี้ (เครดิต)</h2><table class="credit-details-table"><thead><tr><th>วันที่</th><th>ผู้ซื้อ</th><th>รายการ</th><th>ยอดเงิน (บาท)</th><th>กำหนดชำระ</th></tr></thead><tbody>${creditRows}</tbody></table></div>`;
+                    // ADDED "credit-details-sub-table" class for specific mobile styling
+                    creditDetailsHtml = `<div style="margin-top: 15px; text-align:center;"><h2>รายละเอียดลูกหนี้ (เครดิต)</h2><table class="credit-details-table credit-details-sub-table"><thead><tr><th>วันที่</th><th>ผู้ซื้อ</th><th>รายการ</th><th>ยอดเงิน (บาท)</th><th>กำหนดชำระ</th></tr></thead><tbody>${creditRows}</tbody></table></div>`;
                 }
                 
                 allSellersHtml += `
@@ -1631,7 +1758,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const tbody = document.querySelector('#sales-history-table tbody');
             if (!tbody) return;
             tbody.innerHTML = '';
-            [...this.data.sales].reverse().forEach(sale => {
+            [...this.data.sales].sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(sale => {
                 const tr = document.createElement('tr');
                 const saleDate = new Date(sale.date);
                 const dateString = this.formatThaiDateShortYear(sale.date);
@@ -1674,7 +1801,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             tbody.innerHTML = '';
-            [...mySales].reverse().forEach(sale => {
+            mySales.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(sale => {
                 const tr = document.createElement('tr');
                 const saleDate = new Date(sale.date);
                 const dateString = this.formatThaiDateShortYear(sale.date);
@@ -1762,28 +1889,176 @@ document.addEventListener('DOMContentLoaded', () => {
         updateSpecialPriceInfo() { const productId = document.getElementById('pos-product').value; const infoSpan = document.getElementById('current-price-info'); if (infoSpan) { if (productId) { const product = this.data.products.find(p => p.id == productId); infoSpan.textContent = `ราคาปกติ: ${this.formatNumberSmart(product.sellingPrice)} บาท`; } else { infoSpan.textContent = ''; } } },
         manualSaveToBrowser() { try { this.saveData(); this.showToast('✓ บันทึกข้อมูลลงในเบราว์เซอร์แล้ว'); } catch (error) { console.error("บันทึกข้อมูลไม่สำเร็จ:", error); this.showToast("⚠️ เกิดข้อผิดพลาดในการบันทึกข้อมูล", "error"); } },
         saveBackupToFile() { const now = new Date(); const year = now.getFullYear(); const month = String(now.getMonth() + 1).padStart(2, '0'); const day = String(now.getDate()).padStart(2, '0'); const hours = String(now.getHours()).padStart(2, '0'); const minutes = String(now.getMinutes()).padStart(2, '0'); const dateTimeString = `${year}${month}${day}_${hours}${minutes}`; const sellerUsername = this.currentUser.username; const fullFileName = `pos_backup_${sellerUsername}_${dateTimeString}.json`; const dataToSave = this.data; const blob = new Blob([JSON.stringify(dataToSave, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = fullFileName; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); this.showToast(`บันทึกไฟล์ "${fullFileName}" เรียบร้อย`); },
-        promptLoadFromFile(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const content = e.target.result; const data = JSON.parse(content); if (data && typeof data === 'object' && 'users' in data && 'products' in data && 'sales' in data && 'stockIns' in data) { if (confirm("คุณแน่ใจหรือไม่ที่จะเขียนทับข้อมูลทั้งหมดด้วยข้อมูลจากไฟล์นี้? การกระทำนี้ไม่สามารถย้อนกลับได้")) { this.data = data; this.saveData(); this.showToast('กู้คืนข้อมูลสำเร็จ! กำลังรีโหลด...'); setTimeout(() => location.reload(), 1500); } } else { throw new Error("ไฟล์ไม่มีโครงสร้างข้อมูลที่ถูกต้อง"); } } catch (error) { this.showToast("เกิดข้อผิดพลาด: " + error.message, "error"); } }; reader.onerror = () => this.showToast("ไม่สามารถอ่านไฟล์ได้", "error"); reader.readAsText(file, 'UTF-8'); event.target.value = ''; },
+
+        // ================== START: MODIFIED CODE ==================
+        recalculateAllStock() {
+            const totalStockIn = new Map();
+            const totalSold = new Map();
+
+            // 1. คำนวณยอดนำเข้าทั้งหมดของแต่ละสินค้า
+            this.data.stockIns.forEach(si => {
+                const currentQty = totalStockIn.get(si.productId) || 0;
+                totalStockIn.set(si.productId, currentQty + si.quantity);
+            });
+
+            // 2. คำนวณยอดขายทั้งหมดของแต่ละสินค้า
+            this.data.sales.forEach(sale => {
+                sale.items.forEach(item => {
+                    const currentQty = totalSold.get(item.productId) || 0;
+                    totalSold.set(item.productId, currentQty + item.quantity);
+                });
+            });
+
+            // 3. อัปเดตสต็อกคงเหลือในข้อมูลสินค้าหลัก
+            this.data.products.forEach(product => {
+                const initialStock = totalStockIn.get(product.id) || 0;
+                const soldQty = totalSold.get(product.id) || 0;
+                product.stock = initialStock - soldQty;
+            });
+            console.log("Stock recalculated for all products.");
+        },
+        
+        _mergeSingleArray(currentArray, newArray, key = 'id') {
+            if (!newArray || !Array.isArray(newArray)) return;
+            const currentIds = new Set(currentArray.map(item => item[key]));
+            newArray.forEach(newItem => {
+                if (!newItem || typeof newItem[key] === 'undefined') return;
+                if (currentIds.has(newItem[key])) {
+                    const index = currentArray.findIndex(currentItem => currentItem[key] === newItem[key]);
+                    if (index > -1) {
+                        currentArray[index] = newItem;
+                    }
+                } else {
+                    currentArray.push(newItem);
+                    currentIds.add(newItem[key]);
+                }
+            });
+        },
+        
+        mergeData(dataFromFile) {
+            // รวมข้อมูลที่ไม่ใช่สต็อกก่อน (Users, Stores, Sales, StockIns)
+            this._mergeSingleArray(this.data.users, dataFromFile.users, 'id');
+            this._mergeSingleArray(this.data.stores, dataFromFile.stores, 'id');
+            this._mergeSingleArray(this.data.sales, dataFromFile.sales, 'id');
+            this._mergeSingleArray(this.data.stockIns, dataFromFile.stockIns, 'id');
+            
+            // รวมข้อมูลสินค้า แต่ไม่ต้องสนใจค่า stock ที่มากับไฟล์
+            // เราจะเพิ่มสินค้าใหม่เข้ามา แต่ถ้ามีอยู่แล้ว เราจะอัปเดตแค่ข้อมูลอื่นๆ เช่น ชื่อ, ราคา
+            if (dataFromFile.products && Array.isArray(dataFromFile.products)) {
+                dataFromFile.products.forEach(newProduct => {
+                    const existingProduct = this.data.products.find(p => p.id === newProduct.id);
+                    if (existingProduct) {
+                        // ถ้ามีอยู่แล้ว อัปเดตข้อมูลอื่น แต่ข้าม stock
+                        existingProduct.name = newProduct.name;
+                        existingProduct.costPrice = newProduct.costPrice;
+                        existingProduct.sellingPrice = newProduct.sellingPrice;
+                        existingProduct.unit = newProduct.unit;
+                    } else {
+                        // ถ้าเป็นสินค้าใหม่ เพิ่มเข้าไปเลย
+                        this.data.products.push(newProduct);
+                    }
+                });
+            }
+        },
+
+        promptLoadFromFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const content = e.target.result;
+                    const importedData = JSON.parse(content);
+                    if (importedData && typeof importedData === 'object' && 'users' in importedData && 'products' in importedData && 'sales' in importedData) {
+                        const confirmationMessage = "คุณต้องการรวมข้อมูลจากไฟล์นี้เข้ากับข้อมูลปัจจุบันหรือไม่?\n\n- ข้อมูลที่ซ้ำกันจะถูกทับด้วยข้อมูลจากไฟล์\n- ข้อมูลใหม่จะถูกเพิ่มเข้ามา\n- สต็อกสินค้าจะถูกคำนวณใหม่ทั้งหมดจากประวัติการนำเข้าและประวัติการขาย";
+                        if (confirm(confirmationMessage)) {
+                            this.mergeData(importedData);
+                            this.recalculateAllStock(); // <-- คำนวณสต็อกใหม่หลังจากรวมข้อมูลแล้ว
+                            this.saveData();
+                            this.showToast('รวมข้อมูลและคำนวณสต็อกใหม่สำเร็จ! กำลังรีโหลด...');
+                            setTimeout(() => location.reload(), 1500);
+                        }
+                    } else {
+                        throw new Error("ไฟล์ไม่มีโครงสร้างข้อมูลที่ถูกต้อง");
+                    }
+                } catch (error) {
+                    this.showToast("เกิดข้อผิดพลาด: " + error.message, "error");
+                } finally {
+                    event.target.value = '';
+                }
+            };
+            reader.onerror = () => this.showToast("ไม่สามารถอ่านไฟล์ได้", "error");
+            reader.readAsText(file, 'UTF-8');
+        },
+        // =================== END: MODIFIED CODE ===================
+
         renderProductTable() { const tbody = document.querySelector('#product-table tbody'); tbody.innerHTML = ''; this.data.products.forEach(p => { const tr = document.createElement('tr'); tr.innerHTML = `<td data-label="ชื่อสินค้า">${p.name}</td><td data-label="ราคาทุน">${this.formatNumberSmart(p.costPrice)}</td><td data-label="ราคาขาย">${this.formatNumberSmart(p.sellingPrice)}</td><td data-label="สต็อก">${this.formatNumberSmart(p.stock)}</td><td data-label="หน่วย">${p.unit}</td><td data-label="จัดการ"><div class="action-buttons"><button class="edit-product-btn" data-id="${p.id}" style="background-color: var(--warning-color);">แก้ไข</button><button class="danger delete-product-btn" data-id="${p.id}">ลบ</button></div></td>`; tbody.appendChild(tr); }); },
-        saveProduct(e) { e.preventDefault(); const id = document.getElementById('product-id').value; const product = { name: document.getElementById('product-name').value, costPrice: parseFloat(document.getElementById('product-cost').value), sellingPrice: parseFloat(document.getElementById('product-price').value), stock: parseInt(document.getElementById('product-stock').value), unit: document.getElementById('product-unit').value }; if (id) { const index = this.data.products.findIndex(p => p.id == id); this.data.products[index] = { ...this.data.products[index], ...product }; } else { product.id = Date.now(); this.data.products.push(product); } this.saveData(); this.renderProductTable(); document.getElementById('product-form').reset(); document.getElementById('product-id').value = ''; },
+        
+        saveProduct(e) {
+            e.preventDefault();
+            const idValue = document.getElementById('product-id').value;
+            const id = idValue ? parseInt(idValue, 10) : null;
+
+            const newProductData = {
+                name: document.getElementById('product-name').value,
+                costPrice: parseFloat(document.getElementById('product-cost').value),
+                sellingPrice: parseFloat(document.getElementById('product-price').value),
+                stock: parseInt(document.getElementById('product-stock').value),
+                unit: document.getElementById('product-unit').value
+            };
+
+            if (id) {
+                const index = this.data.products.findIndex(p => p.id === id); 
+                if (index > -1) {
+                    const oldProduct = this.data.products[index];
+                    const newName = newProductData.name;
+                    if (oldProduct.name !== newName) {
+                        this.data.sales.forEach(sale => {
+                            sale.items.forEach(item => {
+                                if (item.productId === id) { 
+                                    item.name = newName;
+                                }
+                            });
+                        });
+                        this.data.stockIns.forEach(stockIn => {
+                            if (stockIn.productId === id) { 
+                                stockIn.productName = newName;
+                            }
+                        });
+                        
+                        this.showToast('อัปเดตชื่อสินค้าในประวัติย้อนหลังเรียบร้อย');
+                    }
+                    this.data.products[index] = { ...this.data.products[index], ...newProductData };
+                }
+            } else {
+                newProductData.id = Date.now();
+                this.data.products.push(newProductData);
+            }
+            this.saveData();
+            this.renderProductTable();
+            document.getElementById('product-form').reset();
+            document.getElementById('product-id').value = '';
+        },
+
         editProduct(id) { const product = this.data.products.find(p => p.id == id); if(product) { document.getElementById('product-id').value = product.id; document.getElementById('product-name').value = product.name; document.getElementById('product-cost').value = product.costPrice; document.getElementById('product-price').value = product.sellingPrice; document.getElementById('product-stock').value = product.stock; document.getElementById('product-unit').value = product.unit; document.getElementById('product-name').focus(); } },
         deleteProduct(id) { if(confirm('คุณแน่ใจหรือไม่ว่าต้องการลบสินค้านี้?')) { this.data.products = this.data.products.filter(p => p.id != id); this.saveData(); this.renderProductTable(); } },
-        renderStockIn() { const productSelect = document.getElementById('stock-in-product'); productSelect.innerHTML = '<option value="">--- เลือกสินค้า ---</option>'; this.data.products.forEach(p => { productSelect.innerHTML += `<option value="${p.id}">${p.name}</option>`; }); const historyTbody = document.querySelector('#stock-in-history-table tbody'); historyTbody.innerHTML = ''; [...this.data.stockIns].reverse().slice(0, 20).forEach(si => { const tr = document.createElement('tr'); tr.innerHTML = `<td data-label="วันที่">${new Date(si.date).toLocaleString('th-TH')}</td><td data-label="สินค้า">${si.productName}</td><td data-label="จำนวน">${this.formatNumberSmart(si.quantity)}</td><td data-label="ทุนต่อหน่วย">${this.formatNumberSmart(si.costPerUnit)}</td><td data-label="ยอดรวม">${this.formatNumberSmart(si.quantity * si.costPerUnit)}</td>`; historyTbody.appendChild(tr); }); },
+        renderStockIn() { const productSelect = document.getElementById('stock-in-product'); productSelect.innerHTML = '<option value="">--- เลือกสินค้า ---</option>'; this.data.products.forEach(p => { productSelect.innerHTML += `<option value="${p.id}">${p.name}</option>`; }); const historyTbody = document.querySelector('#stock-in-history-table tbody'); historyTbody.innerHTML = ''; [...this.data.stockIns].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 20).forEach(si => { const tr = document.createElement('tr'); tr.innerHTML = `<td data-label="วันที่">${new Date(si.date).toLocaleString('th-TH')}</td><td data-label="สินค้า">${si.productName}</td><td data-label="จำนวน">${this.formatNumberSmart(si.quantity)}</td><td data-label="ทุนต่อหน่วย">${this.formatNumberSmart(si.costPerUnit)}</td><td data-label="ยอดรวม">${this.formatNumberSmart(si.quantity * si.costPerUnit)}</td>`; historyTbody.appendChild(tr); }); },
         saveStockIn(e) { e.preventDefault(); const productId = document.getElementById('stock-in-product').value; const quantity = parseInt(document.getElementById('stock-in-quantity').value); const costPerUnit = parseFloat(document.getElementById('stock-in-cost').value); const product = this.data.products.find(p => p.id == productId); if (product) { product.stock += quantity; const stockInRecord = { id: Date.now(), date: new Date().toISOString(), productId: product.id, productName: product.name, quantity, costPerUnit }; this.data.stockIns.push(stockInRecord); this.saveData(); this.showToast('บันทึกการนำเข้าเรียบร้อย'); document.getElementById('stock-in-form').reset(); this.renderStockIn(); } else { this.showToast('ไม่พบสินค้า'); } },
         
         renderReport(e) {
             const sellerSelect = document.getElementById('report-seller');
-            const previouslySelectedSeller = sellerSelect.value; // Store current selection
+            const previouslySelectedSeller = sellerSelect.value; 
 
             sellerSelect.innerHTML = '<option value="all">ทั้งหมด</option>';
             this.data.users.forEach(u => {
                 sellerSelect.innerHTML += `<option value="${u.id}">${u.username}</option>`;
             });
             
-            sellerSelect.value = previouslySelectedSeller || 'all'; // Restore selection
+            sellerSelect.value = previouslySelectedSeller || 'all'; 
 
             const startDate = document.getElementById('report-start-date').value;
             const endDate = document.getElementById('report-end-date').value;
-            const sellerId = document.getElementById('report-seller').value; // Read the correct value
+            const sellerId = document.getElementById('report-seller').value; 
             let filteredSales = this.data.sales;
             if (startDate) filteredSales = filteredSales.filter(s => s.date >= new Date(startDate).toISOString());
             if (endDate) {
@@ -1802,13 +2077,51 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         renderStoreTable() { const tbody = document.querySelector('#store-table tbody'); tbody.innerHTML = ''; this.data.stores.forEach(s => { const tr = document.createElement('tr'); tr.innerHTML = `<td data-label="ชื่อร้านค้า">${s.name}</td> <td data-label="จัดการ"><div class="action-buttons"><button class="edit-store-btn" data-id="${s.id}" style="background-color: var(--warning-color);">แก้ไข</button><button class="danger delete-store-btn" data-id="${s.id}">ลบ</button></div></td>`; tbody.appendChild(tr); }); },
-        saveStore(e) { e.preventDefault(); const id = document.getElementById('store-id').value; const name = document.getElementById('store-name').value; if (!name.trim()) { this.showToast('กรุณากรอกชื่อร้าน', 'error'); return; } if (id) { const index = this.data.stores.findIndex(s => s.id == id); this.data.stores[index].name = name; this.showToast('แก้ไขชื่อร้านสำเร็จ'); } else { this.data.stores.push({ id: Date.now(), name }); this.showToast('เพิ่มร้านใหม่สำเร็จ'); } this.saveData(); this.renderStoreTable(); document.getElementById('store-form').reset(); document.getElementById('store-id').value = ''; },
+        
+        saveStore(e) {
+            e.preventDefault();
+            const id = document.getElementById('store-id').value;
+            const name = document.getElementById('store-name').value.trim();
+            
+            if (!name) {
+                this.showToast('กรุณากรอกชื่อร้าน', 'error');
+                return;
+            }
+
+            if (id) { 
+                const storeId = parseInt(id, 10);
+                const storeIndex = this.data.stores.findIndex(s => s.id === storeId);
+                
+                if (storeIndex > -1) {
+                    const oldStore = this.data.stores[storeIndex];
+                    if (oldStore.name !== name) {
+                        this.data.sales.forEach(sale => {
+                            if (sale.storeId === storeId) {
+                                sale.storeName = name;
+                            }
+                        });
+                        this.showToast('อัปเดตชื่อร้านในประวัติการขายเรียบร้อย');
+                    }
+                    this.data.stores[storeIndex].name = name;
+                    this.showToast('แก้ไขชื่อร้านสำเร็จ', 'success'); 
+                }
+            } else { 
+                this.data.stores.push({ id: Date.now(), name });
+                this.showToast('เพิ่มร้านใหม่สำเร็จ');
+            }
+            
+            this.saveData();
+            this.renderStoreTable();
+            document.getElementById('store-form').reset();
+            document.getElementById('store-id').value = '';
+        },
+        
         editStore(id) { const store = this.data.stores.find(s => s.id == id); if (store) { document.getElementById('store-id').value = store.id; document.getElementById('store-name').value = store.name; document.getElementById('store-name').focus(); } },
         deleteStore(id) { const isStoreInUse = this.data.users.some(u => u.storeId == id); if (isStoreInUse) { this.showToast('ไม่สามารถลบร้านค้านี้ได้ เนื่องจากมีผู้ใช้สังกัดอยู่', 'error'); return; } if (confirm('คุณแน่ใจหรือไม่ว่าต้องการลบร้านค้านี้?')) { this.data.stores = this.data.stores.filter(s => s.id != id); this.saveData(); this.renderStoreTable(); this.showToast('ลบร้านค้าเรียบร้อย'); } },
         
         renderUserTable() {
             const tbody = document.querySelector('#user-table tbody');
-            if (!tbody) return; // Add a safe guard
+            if (!tbody) return; 
             tbody.innerHTML = '';
             this.data.users.forEach(u => {
                 let assignedText = 'N/A';
@@ -1839,7 +2152,6 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('user-form').reset();
             document.getElementById('user-id').value = '';
             
-            // Trigger the role change logic to display the correct form fields for a new user
             const roleSelect = document.getElementById('user-role');
             if(roleSelect) {
                 const event = new Event('change');
@@ -1855,41 +2167,28 @@ document.addEventListener('DOMContentLoaded', () => {
             const role = document.getElementById('user-role').value;
             const startDate = document.getElementById('user-sales-start-date').value;
             const endDate = document.getElementById('user-sales-end-date').value;
-
-            // --- Validation Logic ---
             if (!username.trim()) {
                 this.showToast('กรุณากรอกชื่อผู้ใช้', 'error');
                 return;
             }
-
-            // Check for duplicate username for NEW users only
             if (!id && this.data.users.some(u => u.username === username)) {
                 this.showToast('ชื่อผู้ใช้นี้มีอยู่แล้ว', 'error');
                 return;
             }
-
             let assignedProductIds = [];
             let storeId = null;
-
             if (role === 'seller') {
-                // --- Validation for Seller role as requested ---
                 const storeSelect = document.getElementById('user-store-select');
                 storeId = storeSelect ? storeSelect.value : null;
-
-                // 1. Password must be set for new sellers
                 if (!id && !password) {
                     this.showToast('กรุณากำหนดรหัสผ่านสำหรับผู้ขายใหม่', 'error');
                     return;
                 }
-
-                // 2. Store must be selected
                 if (!storeId) {
                     this.showToast('กรุณาระบุร้านค้าสำหรับผู้ขาย', 'error');
                     return;
                 }
                 storeId = parseInt(storeId);
-
-                // 3. Sales period must be set
                 if (!startDate || !endDate) {
                     this.showToast('กรุณากำหนดระยะเวลาการขายให้ครบถ้วน', 'error');
                     return;
@@ -1898,31 +2197,34 @@ document.addEventListener('DOMContentLoaded', () => {
                     this.showToast('วันที่เริ่มขายต้องมาก่อนหรือวันเดียวกับวันที่สิ้นสุด', 'error');
                     return;
                 }
-
                 const checkboxes = document.querySelectorAll('#user-product-assignment input:checked');
                 assignedProductIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
             }
-            // --- END: Validation Logic ---
-
-            if (id) { // Editing existing user
+            if (id) { 
                 const user = this.data.users.find(u => u.id == id);
+                if (user.username !== username) {
+                    this.data.sales.forEach(sale => {
+                        if (sale.sellerId == id) {
+                            sale.sellerName = username;
+                        }
+                    });
+                }
                 user.username = username;
-                if (password) user.password = password; // Only update password if provided
+                if (password) user.password = password;
                 user.role = role;
-
                 if (role === 'seller') {
                     user.assignedProductIds = assignedProductIds;
                     user.salesStartDate = startDate;
                     user.salesEndDate = endDate;
                     user.storeId = storeId;
-                } else { // Clear seller-specific fields if role is changed to admin
+                } else { 
                     delete user.assignedProductIds;
                     delete user.salesStartDate;
                     delete user.salesEndDate;
                     delete user.storeId;
                 }
                  this.showToast('แก้ไขข้อมูลผู้ใช้สำเร็จ');
-            } else { // Creating new user
+            } else { 
                 const newUser = { id: Date.now(), username, password, role };
                 if (role === 'seller') {
                     newUser.assignedProductIds = assignedProductIds;
@@ -1943,7 +2245,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         renderUserStoreAssignment(selectedStoreId = null) {
             const container = document.getElementById('user-store-assignment-container');
-            if (!container) return; // Add a safe guard
+            if (!container) return; 
             container.innerHTML = ''; 
             if (this.data.stores.length === 0) { 
                 container.innerHTML = '<p style="text-align: center; color: red;">ยังไม่มีร้านค้าในระบบ! กรุณาไปที่หน้า "จัดการร้านค้า" เพื่อเพิ่มร้านค้าก่อน</p>'; 
@@ -1958,10 +2260,27 @@ document.addEventListener('DOMContentLoaded', () => {
             container.innerHTML = selectHTML; 
         },
 
-        // ================== START: MODIFIED CODE ==================
         fillPages(){ 
             document.getElementById('page-pos').innerHTML = `<h2>ขายสินค้า (Point of Sale)</h2><div class="pos-layout"><div><form id="add-to-cart-form" style="max-width:none;"><label for="pos-date">วันที่ขาย:</label><input type="date" id="pos-date"><label for="pos-time">เวลา:</label><input type="time" id="pos-time"><label for="pos-product">เลือกสินค้า:</label><select id="pos-product" required></select><label for="pos-quantity">จำนวน:</label><input type="number" id="pos-quantity" value="1" min="1" required><div id="special-price-container" style="display:none; grid-template-columns: 150px 1fr;"><label for="special-price">ราคาขายใหม่:</label><div><input type="number" id="special-price" placeholder="กรอกราคาต่อหน่วย" min="0" step="any"><span id="current-price-info" style="font-size: 0.9em; color: #555; margin-left: 10px;"></span></div></div><div class="form-actions"><button type="submit" class="success">เพิ่มลงตะกร้า</button><button type="button" id="toggle-special-price-btn">ใช้ราคาพิเศษ</button></div></form><h3>รายการในตะกร้า</h3><div class="table-container"><table id="cart-table"><thead><tr><th>สินค้า</th><th>ราคาฯ</th><th>จำนวน</th><th>รวม</th><th>ลบ</th></tr></thead><tbody></tbody></table></div></div><div id="cart-summary"><div id="payment-method-container"><h4>ประเภทการชำระเงิน</h4><div class="payment-options-wrapper"><label><input type="radio" name="payment-method" value="เงินสด" checked> เงินสด</label><label><input type="radio" name="payment-method" value="เงินโอน"> เงินโอน</label><label><input type="radio" name="payment-method" value="เครดิต"> เครดิต</label></div><div id="transfer-fields-container"><div style="margin-top:10px;"><label for="transfer-name" style="text-align:left;font-weight:bold;">ชื่อผู้โอน:</label><input type="text" id="transfer-name"></div></div><div id="credit-fields-container"><div style="margin-top:10px;"><label for="credit-buyer-name" style="text-align:left;font-weight:bold;">ชื่อผู้ซื้อ (เครดิต):</label><input type="text" id="credit-buyer-name"></div><div style="margin-top:10px;"><label for="credit-due-days" style="text-align:left;font-weight:bold;">จำนวนวันเครดิต:</label><input type="number" id="credit-due-days" min="0" placeholder="เช่น 7, 15, 30"></div></div></div><div class="cart-action-row"><span class="cart-total-label">สรุปยอด:</span><div id="cart-total">฿0.00</div><button id="process-sale-btn">ยืนยันการขาย</button></div></div></div>`; 
-            document.getElementById('page-products').innerHTML = `<h2>จัดการสินค้า</h2> <form id="product-form"> <input type="hidden" id="product-id"> <label for="product-name">ชื่อสินค้า:</label> <input type="text" id="product-name" required> <label for="product-cost">ราคาทุน:</label> <input type="number" id="product-cost" min="0" step="0.01" required> <label for="product-price">ราคาขาย:</label> <input type="number" id="product-price" min="0" step="0.01" required> <label for="product-stock">จำนวนในสต็อก:</label> <input type="number" id="product-stock" min="0" required> <label for="product-unit">หน่วย:</label> <input type="text" id="product-unit" placeholder="เช่น ชิ้น, กล่อง" required> <div class="form-actions"> <button type="submit" class="success">บันทึกสินค้า</button> <button type="button" id="clear-product-form-btn" style="background-color:#6c757d;">เคลียร์ฟอร์ม</button> </div> </form> <div class="table-container"><table id="product-table"> <thead> <tr><th>ชื่อสินค้า</th><th>ราคาทุน</th><th>ราคาขาย</th><th>สต็อก</th><th>หน่วย</th><th>จัดการ</th></tr> </thead> <tbody></tbody> </table></div>`; document.getElementById('page-stock-in').innerHTML = `<h2>บันทึกการนำเข้าสินค้า</h2> <form id="stock-in-form"> <label for="stock-in-product">เลือกสินค้า:</label> <select id="stock-in-product" required></select> <label for="stock-in-quantity">จำนวน:</label> <input type="number" id="stock-in-quantity" min="1" required> <label for="stock-in-cost">ราคาทุนต่อหน่วย:</label> <input type="number" id="stock-in-cost" min="0" step="0.01" required> <div class="form-actions"> <button type="submit" class="success">บันทึกการนำเข้า</button> </div> </form> <h3>ประวัติการนำเข้าล่าสุด</h3> <div class="table-container"><table id="stock-in-history-table"> <thead> <tr><th>วันที่</th><th>สินค้า</th><th>จำนวน</th><th>ทุนต่อหน่วย</th><th>ยอดรวม</th></tr> </thead> <tbody></tbody> </table></div>`; document.getElementById('page-sales-history').innerHTML = `<h2>รายการขายย้อนหลัง</h2><div class="table-container"><table id="sales-history-table"><thead><tr><th>วันที่</th><th>เวลา</th><th>รายการสินค้า</th><th>ยอดขายรวม</th><th>กำไรรวม</th><th>ประเภทชำระ</th><th>คนขาย</th><th>ร้านค้า</th><th>จัดการ</th></tr></thead><tbody></tbody></table></div>`; document.getElementById('page-reports').innerHTML = `<h2>รายงานกำไร/ขาดทุน</h2> <form id="report-filter-form" style="grid-template-columns: auto auto auto 1fr; gap: 15px; max-width: none; align-items: end;"> <label style="text-align:left;">ตั้งแต่วันที่:<input type="date" id="report-start-date"></label> <label style="text-align:left;">ถึงวันที่:<input type="date" id="report-end-date"></label> <label style="text-align:left;">คนขาย:<select id="report-seller"><option value="all">ทั้งหมด</option></select></label> <button type="submit" style="background-color: #009688; justify-self: start; max-width: 150px;">สร้างรายงาน</button> </form> <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 20px; text-align: center;"> <div style="background: #f9f9f9; border: 1px solid var(--border-color); padding: 15px; border-radius: 5px;"> <h3>ยอดขายรวม</h3><p id="report-total-sales" style="font-size: 1.5em; font-weight: bold;">฿0.00</p> </div> <div style="background: #f9f9f9; border: 1px solid var(--border-color); padding: 15px; border-radius: 5px;"> <h3>ต้นทุนรวม</h3><p id="report-total-cost" style="font-size: 1.5em; font-weight: bold;">฿0.00</p> </div> <div style="background: #f9f9f9; border: 1px solid var(--border-color); padding: 15px; border-radius: 5px;"> <h3>กำไรสุทธิ</h3><p id="report-net-profit" style="font-size: 1.5em; font-weight: bold; color: var(--success-color);">฿0.00</p> </div> </div>`; 
+            document.getElementById('page-products').innerHTML = `<h2>จัดการสินค้า</h2> <form id="product-form"> <input type="hidden" id="product-id"> <label for="product-name">ชื่อสินค้า:</label> <input type="text" id="product-name" required> <label for="product-cost">ราคาทุน:</label> <input type="number" id="product-cost" min="0" step="0.01" required> <label for="product-price">ราคาขาย:</label> <input type="number" id="product-price" min="0" step="0.01" required> <label for="product-stock">จำนวนในสต็อก:</label> <input type="number" id="product-stock" min="0" required> <label for="product-unit">หน่วย:</label> <input type="text" id="product-unit" placeholder="เช่น ชิ้น, กล่อง" required> <div class="form-actions"> <button type="submit" class="success">บันทึกสินค้า</button> <button type="button" id="clear-product-form-btn" style="background-color:#6c757d;">เคลียร์ฟอร์ม</button> </div> </form> <div class="table-container"><table id="product-table"> <thead> <tr><th>ชื่อสินค้า</th><th>ราคาทุน</th><th>ราคาขาย</th><th>สต็อก</th><th>หน่วย</th><th>จัดการ</th></tr> </thead> <tbody></tbody> </table></div>`; document.getElementById('page-stock-in').innerHTML = `<h2>บันทึกการนำเข้าสินค้า</h2> <form id="stock-in-form"> <label for="stock-in-product">เลือกสินค้า:</label> <select id="stock-in-product" required></select> <label for="stock-in-quantity">จำนวน:</label> <input type="number" id="stock-in-quantity" min="1" required> <label for="stock-in-cost">ราคาทุนต่อหน่วย:</label> <input type="number" id="stock-in-cost" min="0" step="0.01" required> <div class="form-actions"> <button type="submit" class="success">บันทึกการนำเข้า</button> </div> </form> <h3>ประวัติการนำเข้าล่าสุด</h3> <div class="table-container"><table id="stock-in-history-table"> <thead> <tr><th>วันที่</th><th>สินค้า</th><th>จำนวน</th><th>ทุนต่อหน่วย</th><th>ยอดรวม</th></tr> </thead> <tbody></tbody> </table></div>`; document.getElementById('page-sales-history').innerHTML = `<h2>รายการขายย้อนหลัง</h2><div class="table-container"><table id="sales-history-table"><thead><tr><th>วันที่</th><th>เวลา</th><th>รายการสินค้า</th><th>ยอดขายรวม</th><th>กำไรรวม</th><th>ประเภทชำระ</th><th>คนขาย</th><th>ร้านค้า</th><th>จัดการ</th></tr></thead><tbody></tbody></table></div>`; 
+            document.getElementById('page-reports').innerHTML = `<h2>รายงานกำไร/ขาดทุน</h2> 
+            <form id="report-filter-form"> 
+                <label>ตั้งแต่วันที่:<input type="date" id="report-start-date"></label> 
+                <label>ถึงวันที่:<input type="date" id="report-end-date"></label> 
+                <label>คนขาย:<select id="report-seller"><option value="all">ทั้งหมด</option></select></label> 
+                <button type="submit" id="report-generate-btn">สร้างรายงาน</button> 
+            </form> 
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 20px; text-align: center;"> 
+                <div style="background: #f9f9f9; border: 1px solid var(--border-color); padding: 15px; border-radius: 5px;"> 
+                    <h3>ยอดขายรวม</h3><p id="report-total-sales" style="font-size: 1.5em; font-weight: bold;">฿0.00</p> 
+                </div> 
+                <div style="background: #f9f9f9; border: 1px solid var(--border-color); padding: 15px; border-radius: 5px;"> 
+                    <h3>ต้นทุนรวม</h3><p id="report-total-cost" style="font-size: 1.5em; font-weight: bold;">฿0.00</p> 
+                </div> 
+                <div style="background: #f9f9f9; border: 1px solid var(--border-color); padding: 15px; border-radius: 5px;"> 
+                    <h3>กำไรสุทธิ</h3><p id="report-net-profit" style="font-size: 1.5em; font-weight: bold; color: var(--success-color);">฿0.00</p> 
+                </div> 
+            </div>`; 
             document.getElementById('page-summary').innerHTML = `<h2>สรุปข้อมูลการขายแบบละเอียด</h2> 
             <div class="summary-section"> <h3>สรุปด่วน</h3> <div class="summary-form-inline"> <button type="button" id="summary-today-btn" style="background-color: var(--warning-color);">สรุปวันนี้</button> <button type="button" id="summary-all-btn" style="background-color: #673ab7;">สรุปทั้งหมด</button> </div> </div> 
             <div class="summary-section"> <h3>สรุปวันที่เลือก</h3> <div class="summary-form-inline"> <label>เลือกวันที่: <input type="date" id="summary-single-date"></label> <button type="button" id="summary-by-day-btn" style="background-color: #03a9f4;">สรุปวันที่เลือก</button> </div> </div> 
@@ -1971,7 +2290,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('page-stores').innerHTML = `<h2>จัดการร้านค้า</h2> <form id="store-form"> <input type="hidden" id="store-id"> <label for="store-name">ชื่อร้านค้า:</label> <input type="text" id="store-name" required> <div class="form-actions"> <button type="submit" class="success">บันทึกร้านค้า</button> <button type="button" id="clear-store-form-btn" style="background-color:#6c757d;">เคลียร์ฟอร์ม</button> </div> </form> <div class="table-container"><table id="store-table"> <thead> <tr><th>ชื่อร้านค้า</th><th>จัดการ</th></tr> </thead> <tbody></tbody> </table></div>`;
             document.getElementById('page-users').innerHTML = `<h2>จัดการผู้ใช้</h2> <form id="user-form"> <input type="hidden" id="user-id"> <label for="user-username">ชื่อผู้ใช้:</label> <input type="text" id="user-username" required> <label for="user-password">รหัสผ่าน:</label> <input type="password" id="user-password" placeholder="เว้นว่างไว้ถ้าไม่ต้องการเปลี่ยน"> <label for="user-role">ประเภท:</label> <select id="user-role" required> <option value="seller">Seller</option> <option value="admin">Admin</option> </select> <div id="user-store-assignment-container" style="display: none; grid-column: 1/-1;"></div> <div id="user-sales-period-container" style="display: none; grid-column: 1/-1;"> <h4>กำหนดระยะเวลาที่สามารถขายได้</h4> <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px; align-items: center;"> <label for="user-sales-start-date">วันที่เริ่มขาย:</label> <input type="date" id="user-sales-start-date"> <label for="user-sales-end-date">วันที่สิ้นสุด:</label> <input type="date" id="user-sales-end-date"> </div> </div> <div id="user-product-assignment-container" style="display: none; grid-column: 1/-1;"> <h4>กำหนดสินค้าที่สามารถขายได้</h4> <div id="user-product-assignment" style="max-height: 200px; overflow-y: auto; border: 1px solid #BFBFBF; padding: 10px; border-radius: 10px;"></div> </div> <div class="form-actions"> <button type="submit" class="success">บันทึกผู้ใช้</button> <button type="button" id="clear-user-form-btn" style="background-color:#6c757d;">เคลียร์ฟอร์ม</button> </div> </form> <div class="table-container"><table id="user-table"> <thead> <tr><th>ชื่อผู้ใช้</th><th>ประเภท</th><th>ร้านค้า</th><th>สินค้าที่ขายได้</th><th>ระยะเวลาที่ขายได้</th><th>จัดการ</th></tr> </thead> <tbody></tbody> </table></div>`; 
             document.getElementById('page-data').innerHTML = `<h2>จัดการข้อมูล</h2>
-            <div class="data-management-section admin-only data-restore-section"><h3>โหลดข้อมูลจากไฟล์ (Restore)</h3><p style="color: var(--danger-color);"><b>คำเตือน:</b> การโหลดข้อมูลจากไฟล์จะเขียนทับข้อมูลทั้งหมดที่มีอยู่ในระบบปัจจุบัน!</p><input type="file" id="data-file-input" style="display: none;" accept=".json,application/json"><button type="button" id="load-from-file-btn" style="background-color: #E97132;">เลือกไฟล์สำรอง (.json)</button></div>
+            <div class="data-management-section admin-only data-restore-section"><h3>โหลดข้อมูลจากไฟล์ (Restore)</h3><p style="color: var(--danger-color);"><b>คำเตือน:</b> การโหลดข้อมูลจากไฟล์จะรวมข้อมูลเข้ากับข้อมูลปัจจุบัน ข้อมูลที่ซ้ำกันจะถูกเขียนทับด้วยข้อมูลจากไฟล์!</p><input type="file" id="data-file-input" style="display: none;" accept=".json,application/json"><button type="button" id="load-from-file-btn" style="background-color: #E97132;">เลือกไฟล์สำรอง (.json)</button></div>
             
             <div class="data-management-section admin-only"><h3>สำรองข้อมูล (Backup)</h3><p>สำรองข้อมูลทั้งหมด (ผู้ใช้, สินค้า, ประวัติการขาย) ลงในไฟล์ JSON เพื่อเก็บไว้หรือย้ายไปยังเครื่องอื่น</p><button id="save-to-file-btn" class="success">บันทึกข้อมูลทั้งหมดลงไฟล์</button><button id="save-to-browser-btn" style="background-color: #007bff;">บันทึกข้อมูลปัจจุบันลงในเบราว์เซอร์</button></div>
 
@@ -1984,7 +2303,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             <div class="collapsible-bar seller-only" data-target="seller-recent-sales-content"><span>รายการขาย 2 วันล่าสุด</span><span class="arrow">▶</span></div>
             <div id="seller-recent-sales-content" class="collapsible-content seller-only"><div class="table-container" style="margin-top:0;"><table id="seller-sales-history-table"><thead><tr><th>วันที่</th><th>เวลา</th><th>รายการสินค้า</th><th>ยอดขาย</th><th>ประเภทชำระ</th><th>จัดการ</th></tr></thead><tbody></tbody></table></div></div>`; 
-            // ================== END: MODIFIED CODE ==================
         },
         
         attachEventListeners(){ 
@@ -2049,9 +2367,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (e.target.id === 'my-summary-all-btn') this.summarizeMyAll(); 
                 if (e.target.id === 'my-summary-by-day-btn') this.summarizeMyDay(); 
                 if (e.target.id === 'my-summary-all-credit-btn') this.summarizeMyAllCredit(); 
-                // ================== START: MODIFIED CODE ==================
                 if (e.target.id === 'my-summary-all-transfer-btn') this.summarizeMyAllTransfers();
-                // ================== END: MODIFIED CODE ==================
             }); 
             mainApp.addEventListener('change', (e) => { 
                 if(e.target.name === 'payment-method') this.togglePaymentDetailFields(); 
