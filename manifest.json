@@ -1,6 +1,6 @@
 {
-  "name": "๋Juckphai",
-  "short_name": "juckApp",
+  "name": "๋Juckim",
+  "short_name": "juckim",
   "description": "ชุดเครื่องมือและแอปพลิเคชันโดย Juckphai",
   "start_url": "./01.html",
   "display": "standalone",
