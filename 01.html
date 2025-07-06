@@ -1992,7 +1992,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         // =================== END: MODIFIED CODE ===================
 
-        renderProductTable() { const tbody = document.querySelector('#product-table tbody'); tbody.innerHTML = ''; this.data.products.forEach(p => { const tr = document.createElement('tr'); tr.innerHTML = `<td data-label="ชื่อสินค้า">${p.name}</td><td data-label="ราคาทุน">${this.formatNumberSmart(p.costPrice)}</td><td data-label="ราคาขาย">${this.formatNumberSmart(p.sellingPrice)}</td><td data-label="สต็อก">${this.formatNumberSmart(p.stock)}</td><td data-label="หน่วย">${p.unit}</td><td data-label="จัดการ"><div class="action-buttons"><button class="edit-product-btn" data-id="${p.id}" style="background-color: var(--warning-color);">แก้ไข</button><button class="danger delete-product-btn" data-id="${p.id}">ลบ</button></div></td>`; tbody.appendChild(tr); }); },
+        renderProductTable() { const tbody = document.querySelector('#product-table tbody'); if (!tbody) return; tbody.innerHTML = ''; this.data.products.forEach(p => { const tr = document.createElement('tr'); tr.innerHTML = `<td data-label="ชื่อสินค้า">${p.name}</td><td data-label="ราคาทุน">${this.formatNumberSmart(p.costPrice)}</td><td data-label="ราคาขาย">${this.formatNumberSmart(p.sellingPrice)}</td><td data-label="สต็อก">${this.formatNumberSmart(p.stock)}</td><td data-label="หน่วย">${p.unit}</td><td data-label="จัดการ"><div class="action-buttons"><button class="edit-product-btn" data-id="${p.id}" style="background-color: var(--warning-color);">แก้ไข</button><button class="danger delete-product-btn" data-id="${p.id}">ลบ</button></div></td>`; tbody.appendChild(tr); }); },
         
         saveProduct(e) {
             e.preventDefault();
@@ -2039,7 +2039,6 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('product-form').reset();
             document.getElementById('product-id').value = '';
         },
-
         editProduct(id) { const product = this.data.products.find(p => p.id == id); if(product) { document.getElementById('product-id').value = product.id; document.getElementById('product-name').value = product.name; document.getElementById('product-cost').value = product.costPrice; document.getElementById('product-price').value = product.sellingPrice; document.getElementById('product-stock').value = product.stock; document.getElementById('product-unit').value = product.unit; document.getElementById('product-name').focus(); } },
         deleteProduct(id) { if(confirm('คุณแน่ใจหรือไม่ว่าต้องการลบสินค้านี้?')) { this.data.products = this.data.products.filter(p => p.id != id); this.saveData(); this.renderProductTable(); } },
         renderStockIn() { const productSelect = document.getElementById('stock-in-product'); productSelect.innerHTML = '<option value="">--- เลือกสินค้า ---</option>'; this.data.products.forEach(p => { productSelect.innerHTML += `<option value="${p.id}">${p.name}</option>`; }); const historyTbody = document.querySelector('#stock-in-history-table tbody'); historyTbody.innerHTML = ''; [...this.data.stockIns].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 20).forEach(si => { const tr = document.createElement('tr'); tr.innerHTML = `<td data-label="วันที่">${new Date(si.date).toLocaleString('th-TH')}</td><td data-label="สินค้า">${si.productName}</td><td data-label="จำนวน">${this.formatNumberSmart(si.quantity)}</td><td data-label="ทุนต่อหน่วย">${this.formatNumberSmart(si.costPerUnit)}</td><td data-label="ยอดรวม">${this.formatNumberSmart(si.quantity * si.costPerUnit)}</td>`; historyTbody.appendChild(tr); }); },
@@ -2119,6 +2118,7 @@ document.addEventListener('DOMContentLoaded', () => {
         editStore(id) { const store = this.data.stores.find(s => s.id == id); if (store) { document.getElementById('store-id').value = store.id; document.getElementById('store-name').value = store.name; document.getElementById('store-name').focus(); } },
         deleteStore(id) { const isStoreInUse = this.data.users.some(u => u.storeId == id); if (isStoreInUse) { this.showToast('ไม่สามารถลบร้านค้านี้ได้ เนื่องจากมีผู้ใช้สังกัดอยู่', 'error'); return; } if (confirm('คุณแน่ใจหรือไม่ว่าต้องการลบร้านค้านี้?')) { this.data.stores = this.data.stores.filter(s => s.id != id); this.saveData(); this.renderStoreTable(); this.showToast('ลบร้านค้าเรียบร้อย'); } },
         
+        // === START: CORRECTED FUNCTION 1 ===
         renderUserTable() {
             const tbody = document.querySelector('#user-table tbody');
             if (!tbody) return; 
@@ -2149,46 +2149,42 @@ document.addEventListener('DOMContentLoaded', () => {
                 tbody.appendChild(tr);
             });
             
-            document.getElementById('user-form').reset();
-            document.getElementById('user-id').value = '';
-            
-            const roleSelect = document.getElementById('user-role');
-            if(roleSelect) {
-                const event = new Event('change');
-                roleSelect.dispatchEvent(event);
-            }
+            // CORRECTED: Call the new setup function for a new user.
+            this.setupUserForm(); 
         },
 
         saveUser(e) {
             e.preventDefault();
+
+            // 1. Get all values from the form
             const id = document.getElementById('user-id').value;
             const username = document.getElementById('user-username').value;
             const password = document.getElementById('user-password').value;
             const role = document.getElementById('user-role').value;
             const startDate = document.getElementById('user-sales-start-date').value;
             const endDate = document.getElementById('user-sales-end-date').value;
+
+            // Basic validation
             if (!username.trim()) {
                 this.showToast('กรุณากรอกชื่อผู้ใช้', 'error');
                 return;
             }
-            if (!id && this.data.users.some(u => u.username === username)) {
-                this.showToast('ชื่อผู้ใช้นี้มีอยู่แล้ว', 'error');
-                return;
-            }
+
+            // Initialize seller-specific variables
             let assignedProductIds = [];
             let storeId = null;
+
+            // 2. Gather and validate seller-specific data if the role is 'seller'
             if (role === 'seller') {
                 const storeSelect = document.getElementById('user-store-select');
                 storeId = storeSelect ? storeSelect.value : null;
-                if (!id && !password) {
-                    this.showToast('กรุณากำหนดรหัสผ่านสำหรับผู้ขายใหม่', 'error');
-                    return;
-                }
+
                 if (!storeId) {
                     this.showToast('กรุณาระบุร้านค้าสำหรับผู้ขาย', 'error');
                     return;
                 }
-                storeId = parseInt(storeId);
+                storeId = parseInt(storeId, 10); // Convert to number
+
                 if (!startDate || !endDate) {
                     this.showToast('กรุณากำหนดระยะเวลาการขายให้ครบถ้วน', 'error');
                     return;
@@ -2198,9 +2194,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
                 const checkboxes = document.querySelectorAll('#user-product-assignment input:checked');
-                assignedProductIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+                assignedProductIds = Array.from(checkboxes).map(cb => parseInt(cb.value, 10));
             }
-            if (id) { 
+
+            // 3. Handle Edit vs. New User logic
+            if (id) {
+                // --- EDITING AN EXISTING USER ---
                 const user = this.data.users.find(u => u.id == id);
                 if (user.username !== username) {
                     this.data.sales.forEach(sale => {
@@ -2212,19 +2211,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 user.username = username;
                 if (password) user.password = password;
                 user.role = role;
+
                 if (role === 'seller') {
                     user.assignedProductIds = assignedProductIds;
                     user.salesStartDate = startDate;
                     user.salesEndDate = endDate;
                     user.storeId = storeId;
-                } else { 
+                } else {
+                    // If role changed from seller to admin, remove seller-specific properties
                     delete user.assignedProductIds;
                     delete user.salesStartDate;
                     delete user.salesEndDate;
                     delete user.storeId;
                 }
-                 this.showToast('แก้ไขข้อมูลผู้ใช้สำเร็จ');
-            } else { 
+                this.showToast('แก้ไขข้อมูลผู้ใช้สำเร็จ');
+            } else {
+                // --- ADDING A NEW USER ---
+                if (this.data.users.some(u => u.username === username)) {
+                    this.showToast('ชื่อผู้ใช้นี้มีอยู่แล้ว', 'error');
+                    return;
+                }
+                if (!password) {
+                    this.showToast('กรุณากำหนดรหัสผ่านสำหรับผู้ใช้ใหม่', 'error');
+                    return;
+                }
+
                 const newUser = { id: Date.now(), username, password, role };
                 if (role === 'seller') {
                     newUser.assignedProductIds = assignedProductIds;
@@ -2235,12 +2246,66 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.data.users.push(newUser);
                 this.showToast('เพิ่มผู้ใช้ใหม่สำเร็จ');
             }
+
+            // 6. Final steps
             this.saveData();
             this.renderUserTable();
         },
         
-        editUser(id) { const user = this.data.users.find(p => p.id == id); if (user) { document.getElementById('user-id').value = user.id; document.getElementById('user-username').value = user.username; document.getElementById('user-role').value = user.role; document.getElementById('user-password').value = ''; document.getElementById('user-password').placeholder = 'เว้นว่างไว้ถ้าไม่ต้องการเปลี่ยน'; const productContainer = document.getElementById('user-product-assignment-container'); const salesContainer = document.getElementById('user-sales-period-container'); const storeContainer = document.getElementById('user-store-assignment-container'); if(user.role === 'seller') { storeContainer.style.display = 'block'; this.renderUserStoreAssignment(user.storeId); productContainer.style.display = 'grid'; this.renderUserProductAssignment(user.assignedProductIds || []); salesContainer.style.display = 'block'; document.getElementById('user-sales-start-date').value = user.salesStartDate || ''; document.getElementById('user-sales-end-date').value = user.salesEndDate || ''; } else { productContainer.style.display = 'none'; salesContainer.style.display = 'none'; storeContainer.style.display = 'none'; } document.getElementById('user-username').focus(); } },
+        // === START: CORRECTED FUNCTION 2 ===
+        editUser(id) { 
+            const user = this.data.users.find(p => p.id == id);
+            // CORRECTED: Use the new setup function to populate the form for editing.
+            if(user) {
+                this.setupUserForm(user);
+            }
+        },
+        
         deleteUser(id) { const user = this.data.users.find(u => u.id == id); if (user && user.username === 'admin') { this.showToast('ไม่สามารถลบผู้ใช้ admin ได้', 'error'); return; } if(confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบผู้ใช้ ${user.username}?`)) { this.data.users = this.data.users.filter(u => u.id != id); this.saveData(); this.renderUserTable(); } },
+        
+        // === START: NEW FUNCTION 3 ===
+        setupUserForm(user = null) {
+            const form = document.getElementById('user-form');
+            form.reset();
+
+            const productContainer = document.getElementById('user-product-assignment-container');
+            const salesContainer = document.getElementById('user-sales-period-container');
+            const storeContainer = document.getElementById('user-store-assignment-container');
+            
+            if (user) { // Editing an existing user
+                document.getElementById('user-id').value = user.id;
+                document.getElementById('user-username').value = user.username;
+                document.getElementById('user-role').value = user.role;
+                document.getElementById('user-password').value = '';
+                document.getElementById('user-password').placeholder = 'เว้นว่างไว้ถ้าไม่ต้องการเปลี่ยน';
+
+                if (user.role === 'seller') {
+                    storeContainer.style.display = 'block';
+                    salesContainer.style.display = 'block';
+                    productContainer.style.display = 'grid';
+                    this.renderUserStoreAssignment(user.storeId);
+                    this.renderUserProductAssignment(user.assignedProductIds || []);
+                    document.getElementById('user-sales-start-date').value = user.salesStartDate || '';
+                    document.getElementById('user-sales-end-date').value = user.salesEndDate || '';
+                } else {
+                    storeContainer.style.display = 'none';
+                    salesContainer.style.display = 'none';
+                    productContainer.style.display = 'none';
+                }
+            } else { // Setting up for a new user
+                document.getElementById('user-id').value = '';
+                document.getElementById('user-password').placeholder = 'กำหนดรหัสผ่านสำหรับผู้ใช้ใหม่';
+                
+                // By default, the form resets to "seller", so we show the fields.
+                storeContainer.style.display = 'block';
+                salesContainer.style.display = 'block';
+                productContainer.style.display = 'grid';
+                this.renderUserStoreAssignment(); // Render with no selection
+                this.renderUserProductAssignment(); // Render with no selection
+            }
+            document.getElementById('user-username').focus();
+        },
+        
         renderUserProductAssignment(selectedIds = []) { const container = document.getElementById('user-product-assignment'); if (!container) return; container.innerHTML = ''; if (this.data.products.length === 0) { container.innerHTML = '<p>ยังไม่มีสินค้าในระบบ โปรดเพิ่มสินค้าก่อน</p>'; return; } this.data.products.forEach(p => { const isChecked = selectedIds.includes(p.id); container.innerHTML += `<label class="product-item" style="display: block; margin-bottom: 5px;"><input type="checkbox" value="${p.id}" ${isChecked ? 'checked' : ''}> ${p.name}</label>`; }); },
         
         renderUserStoreAssignment(selectedStoreId = null) {
@@ -2333,11 +2398,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 if (e.target.id === 'clear-product-form-btn') { document.getElementById('product-form').reset(); document.getElementById('product-id').value = ''; } 
                 if (e.target.classList.contains('edit-product-btn')) this.editProduct(e.target.dataset.id); 
-                if (e.target.classList.contains('delete-product-btn')) this.deleteProduct(e.target.id); 
+
+                // === START CORRECTION ===
+                if (e.target.classList.contains('delete-product-btn')) this.deleteProduct(e.target.dataset.id);
+                // === END CORRECTION ===
+
                 if (e.target.id === 'clear-store-form-btn') { document.getElementById('store-form').reset(); document.getElementById('store-id').value = ''; }
                 if (e.target.classList.contains('edit-store-btn')) this.editStore(e.target.dataset.id);
                 if (e.target.classList.contains('delete-store-btn')) this.deleteStore(e.target.dataset.id);
-                if (e.target.id === 'clear-user-form-btn') this.renderUserTable(); 
+                if (e.target.id === 'clear-user-form-btn') this.setupUserForm(); // Corrected call
                 if (e.target.classList.contains('edit-user-btn')) this.editUser(e.target.dataset.id); 
                 if (e.target.classList.contains('delete-user-btn')) this.deleteUser(e.target.dataset.id); 
                 
@@ -2377,9 +2446,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     const storeDiv = document.getElementById('user-store-assignment-container');
                     if(productDiv && salesDiv && storeDiv) { 
                         if (e.target.value === 'seller') { 
-                            storeDiv.style.display = 'block'; this.renderUserStoreAssignment();
+                            storeDiv.style.display = 'block'; 
                             salesDiv.style.display = 'block'; 
-                            productDiv.style.display = 'grid'; this.renderUserProductAssignment(); 
+                            productDiv.style.display = 'grid'; 
+                            this.renderUserStoreAssignment();
+                            this.renderUserProductAssignment(); 
                         } else { 
                             storeDiv.style.display = 'none';
                             salesDiv.style.display = 'none'; 
