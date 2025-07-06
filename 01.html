@@ -293,6 +293,11 @@
             margin: 10px 0;
             flex-wrap: wrap; /* Added for better mobile view */
         }
+        
+        /* --- Change Radio Button Color --- */
+        #payment-method-container input[type="radio"] {
+            accent-color: var(--danger-color);
+        }
 
         #credit-fields-container, #transfer-fields-container { margin-top: 10px; display: none; }
 
@@ -497,6 +502,45 @@
             }
              /* === END: REFINED RULES FOR POS CART TABLE === */
 
+            /* === START: USER REQUEST - Green Cart Table Customization (Data Rows Only) === */
+            /* Target ONLY the data cells (td) inside the cart table's body */
+            #page-pos #cart-table tbody td {
+                background-color: var(--success-color);
+                color: white;
+                /* Use a lighter border that complements the green background */
+                border-color: #a3d9b1;
+            }
+
+            /* Double the vertical padding for height increase (Desktop) */
+            /* This is outside the media query but is applied first */
+            #page-pos #cart-table tbody td {
+                padding-top: 12px;
+                padding-bottom: 12px;
+            }
+
+            /* Ensure header (th) remains with its default style for contrast */
+            #page-pos #cart-table th {
+                background-color: #f2f2f2; /* Default from general table style */
+                color: #333; /* Default text color */
+                padding-top: 6px;  /* Keep original padding */
+                padding-bottom: 6px;
+            }
+
+            @media (max-width: 768px) {
+                /* Double the vertical padding for height increase (Mobile) */
+                #page-pos #cart-table tbody td {
+                    padding-top: 16px;
+                    padding-bottom: 16px;
+		    font-size: 16px;
+                }
+                /* Keep original mobile padding for header */
+                 #page-pos #cart-table th {
+                    padding-top: 4px;
+                    padding-bottom: 4px;
+                }
+            }
+            /* === END: USER REQUEST === */
+
             /* === POS Page Mobile Compacting Rules === */
             #page-pos h2, #page-pos h3 {
                 margin-bottom: 15px;
@@ -569,7 +613,7 @@
             }
             #page-pos #process-sale-btn {
                 padding: 8px 10px; 
-                font-size: 0.9em; 
+                font-size: 1.0em; 
                 margin: 0;
                 flex-shrink: 0;
                 width: auto; 
@@ -697,6 +741,7 @@
                 grid-template-columns: 1fr; /* Stack into a single column on mobile */
                 gap: 10px;
             }
+
             #report-generate-btn {
                 width: 100%;
                 max-width: none; /* Override desktop max-width */
@@ -1744,7 +1789,7 @@ document.addEventListener('DOMContentLoaded', () => {
             this.updateSpecialPriceInfo();
         },
 
-        renderCart() { const tbody = document.querySelector('#cart-table tbody'); if (!tbody) return; tbody.innerHTML = ''; let total = 0; this.cart.forEach((item, index) => { const tr = document.createElement('tr'); const itemTotal = item.sellingPrice * item.quantity; total += itemTotal; let itemName = item.name; if (item.isSpecialPrice) { itemName += ` <span style="color:red;font-weight:bold;">(พิเศษ)</span>`; } tr.innerHTML = `<td data-label="สินค้า">${itemName}</td><td data-label="ราคาฯ">${this.formatNumberSmart(item.sellingPrice)}</td><td data-label="จำนวน">${this.formatNumberSmart(item.quantity)}</td><td data-label="รวม">${this.formatNumberSmart(itemTotal)}</td><td data-label="ลบ"><div class="action-buttons"><button class="danger remove-from-cart-btn" data-index="${index}">ลบ</button></div></td>`; tbody.appendChild(tr); }); document.getElementById('cart-total').textContent = `฿${this.formatNumberSmart(total)}`; },
+        renderCart() { const tbody = document.querySelector('#cart-table tbody'); if (!tbody) return; tbody.innerHTML = ''; let total = 0; this.cart.forEach((item, index) => { const tr = document.createElement('tr'); const itemTotal = item.sellingPrice * item.quantity; total += itemTotal; let itemName = item.name; if (item.isSpecialPrice) { itemName += ` <span style="font-weight:bold;">(พิเศษ)</span>`; } tr.innerHTML = `<td data-label="สินค้า">${itemName}</td><td data-label="ราคาฯ">${this.formatNumberSmart(item.sellingPrice)}</td><td data-label="จำนวน">${this.formatNumberSmart(item.quantity)}</td><td data-label="รวม">${this.formatNumberSmart(itemTotal)}</td><td data-label="ลบ"><div class="action-buttons"><button class="danger remove-from-cart-btn" data-index="${index}">ลบ</button></div></td>`; tbody.appendChild(tr); }); document.getElementById('cart-total').textContent = `฿${this.formatNumberSmart(total)}`; },
         addToCart(e) { e.preventDefault(); const productId = document.getElementById('pos-product').value; if (!productId) { this.showToast('กรุณาเลือกสินค้า'); return; } const quantity = parseInt(document.getElementById('pos-quantity').value); const product = this.data.products.find(p => p.id == productId); if (quantity > product.stock) { this.showToast('สินค้าในสต็อกไม่เพียงพอ'); return; } const specialPriceInput = document.getElementById('special-price'); let sellingPrice = product.sellingPrice; let isSpecialPrice = false; if (specialPriceInput.parentElement.style.display !== 'none' && specialPriceInput.value.trim() !== '') { const newPrice = parseFloat(specialPriceInput.value); if (!isNaN(newPrice) && newPrice >= 0) { sellingPrice = newPrice; isSpecialPrice = true; } } const existingCartItem = this.cart.find(item => item.id === product.id && item.sellingPrice === sellingPrice); if (existingCartItem) { existingCartItem.quantity += quantity; } else { this.cart.push({ id: product.id, name: product.name, quantity: quantity, sellingPrice: sellingPrice, costPrice: product.costPrice, isSpecialPrice: isSpecialPrice, originalPrice: product.sellingPrice }); } this.renderCart(); document.getElementById('add-to-cart-form').reset(); document.getElementById('pos-quantity').value = 1; this.updateSpecialPriceInfo(); },
         removeFromCart(index) { this.cart.splice(index, 1); this.renderCart(); },
         
