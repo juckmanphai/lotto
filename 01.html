@@ -747,6 +747,82 @@
                 max-width: none; /* Override desktop max-width */
                 justify-self: stretch; /* Make it fill the grid cell */
             }
+
+            /* === START: SELLER VIEW MOBILE ENHANCEMENTS (USER REQUEST) === */
+            
+            /* เพิ่มระยะห่างและทำให้เนื้อหาดูโปร่งขึ้น */
+            .collapsible-content.seller-only {
+                padding: 20px 15px;
+            }
+
+            /* --- ปรับปรุงส่วนสรุปข้อมูลของผู้ขาย --- */
+            #seller-summary-content div:first-of-type {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+             #seller-summary-content button {
+                padding: 14px;
+                font-size: 1.1em;
+                font-weight: bold;
+                width: 100%;
+            }
+            #seller-summary-content .summary-form-inline {
+                flex-direction: column;
+                align-items: stretch;
+            }
+             #seller-summary-content .summary-form-inline label {
+                font-size: 1.1em;
+                text-align: center;
+                margin-bottom: 5px;
+            }
+            
+            /* --- ปรับปรุงตารางรายการขายของผู้ขาย --- */
+            #seller-sales-history-table th {
+                background-color: var(--primary-color); /* ใช้สีหลักของเว็บ */
+                color: white;
+                font-size: 15px;
+                font-weight: bold;
+                padding: 10px 8px;
+            }
+            #seller-sales-history-table td {
+                font-size: 16px; /* ขนาดตัวอักษรที่อ่านง่ายบนมือถือ */
+                padding: 12px 8px; /* เพิ่มความสูงของแถว */
+            }
+
+            /* คอลัมน์รายการสินค้า (ทำให้เด่นและอ่านง่าย) */
+            #seller-sales-history-table td:nth-child(3) {
+                text-align: left;
+                line-height: 1.4;
+                font-weight: 500; /* หนาขึ้นเล็กน้อย */
+            }
+            
+            /* คอลัมน์ยอดขาย (ทำให้เด่น) */
+            #seller-sales-history-table td:nth-child(4) {
+                font-weight: bold;
+                color: var(--primary-color);
+            }
+
+            /* --- ปรับปรุงส่วน Backup ข้อมูลของผู้ขาย --- */
+            #seller-backup-content p {
+                font-size: 1em;
+                line-height: 1.5;
+                margin-bottom: 20px;
+            }
+             #seller-backup-content div {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+            #seller-backup-content button {
+                width: 100%;
+                padding: 14px;
+                font-size: 1.1em;
+                font-weight: bold;
+            }
+
+            /* === END: SELLER VIEW MOBILE ENHANCEMENTS === */
+
         }
     </style>
 </head>
