@@ -353,6 +353,42 @@
         .format-modal-buttons .btn-display { background-color: #007bff; }
         .format-modal-buttons .btn-cancel { background-color: #6c757d; }
 
+        /* === NEW: RESET MODAL === */
+        #reset-modal-content {
+            background-color: #fff;
+            padding: 20px 30px;
+            border-radius: 15px;
+            text-align: left;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            width: 90%;
+            max-width: 500px;
+        }
+        #reset-modal-content h3 {
+            text-align: center;
+            color: var(--danger-color);
+            margin-top: 0;
+        }
+        #reset-options-container {
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        #reset-options-container label {
+            display: block;
+            margin-bottom: 12px;
+            font-size: 1.1em;
+            cursor: pointer;
+        }
+        #reset-options-container input {
+            width: auto;
+            margin-right: 10px;
+        }
+        #reset-modal-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
         /* RESPONSIVE STYLES */
         @media (max-width: 768px) {
             .main-wrapper {
@@ -743,6 +779,26 @@
     <div id="summaryModal" class="modal-overlay"><div class="modal-content-container"><div id="modalBodyContent"></div><button onclick="App.closeSummaryModal()" class="modal-close-btn">ปิดหน้าต่างนี้</button></div></div>
     <div id="summaryOutputModal" class="modal-overlay"><div class="format-modal-content"><h3>เลือกรูปแบบการแสดงผลสรุป</h3><div class="format-modal-buttons"><button class="btn-display" onclick="App.handleSummaryOutput('display')">แสดงบนจอ</button><button class="btn-csv" onclick="App.handleSummaryOutput('csv')">ส่งออกเป็น CSV</button><button class="btn-cancel" onclick="App.closeSummaryOutputModal()">ยกเลิก</button></div></div></div>
 
+    <!-- NEW: Reset Modal -->
+    <div id="resetModal" class="modal-overlay">
+        <div id="reset-modal-content">
+            <h3>เลือกข้อมูลที่จะรีเซ็ต</h3>
+            <p style="color: var(--danger-color); font-weight: bold;">คำเตือน: การกระทำนี้ไม่สามารถย้อนกลับได้! โปรดเลือกด้วยความระมัดระวัง</p>
+            <div id="reset-options-container">
+                <label><input type="checkbox" id="reset-sales-checkbox"> ลบประวัติการขายทั้งหมด (Sales)</label>
+                <label><input type="checkbox" id="reset-stockins-checkbox"> ลบประวัติการนำเข้าทั้งหมด (Stock-ins)</label>
+                <label><input type="checkbox" id="reset-products-checkbox"> ลบสินค้าทั้งหมด (Products)</label>
+                <label style="color: var(--danger-color);"><input type="checkbox" id="reset-sellers-checkbox"> ลบผู้ขายทั้งหมด (Sellers - ยกเว้น Admin)</label>
+                <label style="color: var(--danger-color);"><input type="checkbox" id="reset-stores-checkbox"> ลบร้านค้าทั้งหมด (Stores)</label>
+            </div>
+            <div id="reset-modal-actions">
+                <button type="button" id="cancel-reset-btn" style="background-color: #6c757d;">ยกเลิก</button>
+                <button type="button" id="confirm-selective-reset-btn" class="danger">ยืนยันการรีเซ็ต</button>
+            </div>
+        </div>
+    </div>
+
+
 <script>
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -872,7 +928,7 @@ document.addEventListener('DOMContentLoaded', () => {
         login(username, password) { const user = this.data.users.find(u => u.username === username && u.password === password); if (user) { this.currentUser = user; sessionStorage.setItem('posCurrentUser', JSON.stringify(this.currentUser)); this.showMainApp(); document.getElementById('login-error').textContent = ''; } else { document.getElementById('login-error').textContent = 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง'; } },
         logout() { this.currentUser = null; sessionStorage.removeItem('posCurrentUser'); this.showLoginScreen(); },
         showLoginScreen() { document.getElementById('login-screen').style.display = 'block'; document.getElementById('main-app').style.display = 'none'; },
-        showToast(message, type = 'success') { const toast = document.getElementById('toast-notification'); if (!toast) return; toast.textContent = message; toast.style.backgroundColor = type === 'error' ? 'var(--danger-color)' : 'var(--success-color)'; toast.className = 'show'; setTimeout(() => { toast.className = toast.className.replace('show', ''); }, 3000); },
+        showToast(message, type = 'success') { const toast = document.getElementById('toast-notification'); if (!toast) return; toast.textContent = message; toast.style.backgroundColor = type === 'error' ? 'var(--danger-color)' : (type === 'warning' ? 'var(--warning-color)' : 'var(--success-color)'); toast.className = 'show'; setTimeout(() => { toast.className = toast.className.replace('show', ''); }, 3000); },
         openSummaryModal(htmlContent) { const modal = document.getElementById('summaryModal'); const modalBody = document.getElementById('modalBodyContent'); modalBody.innerHTML = htmlContent; modal.style.display = 'flex'; },
         closeSummaryModal() { document.getElementById('summaryModal').style.display = 'none'; },
         openSummaryOutputModal() { document.getElementById('summaryOutputModal').style.display = 'flex'; },
@@ -928,7 +984,54 @@ document.addEventListener('DOMContentLoaded', () => {
         _runSummary(startDate, endDate, title, periodName, sellerId = null) { const summaryResult = this.generatePosSummaryData(startDate, endDate, sellerId); if (summaryResult.salesCount === 0) { this.showToast("ไม่พบข้อมูลการขายในช่วงที่กำหนด"); return; } const isSingleDay = (startDate.getFullYear() === endDate.getFullYear() && startDate.getMonth() === endDate.getMonth() && startDate.getDate() === endDate.getDate()); const thaiDateString = isSingleDay ? this.formatThaiDateShortYear(startDate) : `${this.formatThaiDateShortYear(startDate)} ถึง ${this.formatThaiDateShortYear(endDate)}`; const dateString = `${startDate.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]}`; this.summaryContext = { summaryResult, title, dateString, thaiDateString, periodName, sellerIdFilter: sellerId, startDate, endDate }; this.openSummaryOutputModal(); },
         summarizeToday() { const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0); const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999); this._runSummary(todayStart, todayEnd, "สรุปข้อมูลของวันนี้", "Today"); },
         summarizeAll() { if (this.data.sales.length === 0) { this.showToast("ยังไม่มีข้อมูลการขาย"); return; } const allDates = this.data.sales.map(s => new Date(s.date)); const startDate = new Date(Math.min.apply(null, allDates)); startDate.setHours(0, 0, 0, 0); const endDate = new Date(Math.max.apply(null, allDates)); endDate.setHours(23, 59, 59, 999); this._runSummary(startDate, endDate, "สรุปข้อมูลทั้งหมด", "All"); },
-        summarizeByDay() { const dateStr = document.getElementById('summary-single-date').value; if (!dateStr) { this.showToast("กรุณาเลือกวันที่"); return; } const startDate = new Date(dateStr); startDate.setHours(0, 0, 0, 0); const endDate = new Date(dateStr); endDate.setHours(23, 59, 59, 999); this._runSummary(startDate, endDate, "สรุปข้อมูลของวันที่เลือก", `Date_${dateStr}`); },
+        
+        summarizeByDay() {
+            const dateStr = document.getElementById('summary-single-date').value;
+            if (!dateStr) {
+                this.showToast("กรุณาเลือกวันที่");
+                return;
+            }
+
+            if (this.data.sales.length === 0) {
+                this.showToast("ยังไม่มีข้อมูลการขาย");
+                return;
+            }
+
+            const allDates = this.data.sales.map(s => new Date(s.date));
+            const startDate = new Date(Math.min.apply(null, allDates));
+            startDate.setHours(0, 0, 0, 0);
+
+            const endDate = new Date(dateStr);
+            endDate.setHours(23, 59, 59, 999);
+            
+            if (endDate < startDate) {
+                this.showToast("วันที่เลือกอยู่ก่อนวันที่มีการขายครั้งแรก");
+                return;
+            }
+
+            const newTitle = `สรุปยอดสะสมถึงวันที่ ${this.formatThaiDateShortYear(endDate)}`;
+            const newPeriodName = `Cumulative_UpTo_${dateStr}`;
+
+            this._runSummary(startDate, endDate, newTitle, newPeriodName);
+        },
+
+        calculateStockAtDate(productId, endDate) {
+            const endOfDay = new Date(endDate);
+            endOfDay.setHours(23, 59, 59, 999);
+
+            const totalStockIn = this.data.stockIns
+                .filter(si => si.productId === productId && new Date(si.date) <= endOfDay)
+                .reduce((sum, si) => sum + si.quantity, 0);
+
+            const totalSold = this.data.sales
+                .filter(sale => new Date(sale.date) <= endOfDay)
+                .flatMap(sale => sale.items)
+                .filter(item => item.productId === productId)
+                .reduce((sum, item) => sum + item.quantity, 0);
+            
+            return totalStockIn - totalSold;
+        },
+        
         summarizeByRange() { let startDateStr = document.getElementById('summary-range-start').value; let endDateStr = document.getElementById('summary-range-end').value; if (!startDateStr || !endDateStr) { this.showToast("กรุณาเลือกวันที่เริ่มต้นและสิ้นสุด"); return; } let startDate = new Date(startDateStr); startDate.setHours(0, 0, 0, 0); let endDate = new Date(endDateStr); endDate.setHours(23, 59, 59, 999); if (startDate > endDate) { this.showToast("วันที่เริ่มต้นต้องมาก่อนวันที่สิ้นสุด"); return; } this._runSummary(startDate, endDate, "สรุปข้อมูลตามช่วงวันที่", `Range_${startDateStr}_to_${endDateStr}`); },
         summarizeMyToday() { const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0); const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999); this._runSummary(todayStart, todayEnd, `สรุปยอดขายวันนี้ (${this.currentUser.username})`, `MyToday`, this.currentUser.id); },
         summarizeMyDay() { const dateStr = document.getElementById('my-summary-date').value; if (!dateStr) { this.showToast("กรุณาเลือกวันที่"); return; } const startDate = new Date(dateStr); startDate.setHours(0, 0, 0, 0); const endDate = new Date(dateStr); endDate.setHours(23, 59, 59, 999); this._runSummary(startDate, endDate, `สรุปยอดขายวันที่เลือก (${this.currentUser.username})`, `MyDate_${dateStr}`, this.currentUser.id); },
@@ -1353,7 +1456,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     const productId = item.productId;
                     if (!sellerData.productSummary[productId]) {
                         const productInfo = this.data.products.find(p => p.id === productId);
-                        sellerData.productSummary[productId] = { name: item.name, stock: productInfo ? productInfo.stock : 'N/A', unit: productInfo ? productInfo.unit : 'หน่วย', cashQty: 0, creditQty: 0, transferQty: 0, totalQty: 0, totalValue: 0, };
+                        const stockAtEndDate = this.calculateStockAtDate(productId, endDate);
+                        sellerData.productSummary[productId] = { 
+                            name: item.name, 
+                            stock: stockAtEndDate, 
+                            unit: productInfo ? productInfo.unit : 'หน่วย', 
+                            cashQty: 0, 
+                            creditQty: 0, 
+                            transferQty: 0, 
+                            totalQty: 0, 
+                            totalValue: 0, 
+                        };
                     }
                     const productSum = sellerData.productSummary[productId];
                     productSum.totalQty += item.quantity;
@@ -1430,14 +1543,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 let creditDetailsHtml = '';
-                const creditSalesDetails = this.data.sales.filter(s => s.sellerId == sellerId && s.paymentMethod === 'เครดิต' && new Date(s.date) >= startDate && new Date(s.date) <= endDate);
+                const creditSalesDetails = this.data.sales
+                    .filter(s => s.sellerId == sellerId && s.paymentMethod === 'เครดิต' && new Date(s.date) >= startDate && new Date(s.date) <= endDate)
+                    .sort((a, b) => new Date(b.date) - new Date(a.date));
                 if (creditSalesDetails.length > 0) {
                     let creditRows = '';
                     creditSalesDetails.forEach(s => {
                         const itemsList = s.items.map(item => { const product = this.data.products.find(p => p.id === item.productId); const unit = product ? product.unit : 'หน่วย'; return `${item.name}( ${this.formatNumberSmart(item.quantity)} ${unit} )`; }).join(', ');
                         creditRows += `<tr><td data-label="วันที่">${this.formatThaiDateShortYear(s.date)}</td><td data-label="ผู้ซื้อ">${s.buyerName || '-'}</td><td data-label="รายการ">${itemsList}</td><td data-label="ยอดเงิน (บาท)">${formatCurrency(s.total)}</td><td data-label="กำหนดชำระ">${this.formatThaiDateShortYear(s.creditDueDate)}</td></tr>`;
                     });
-                    // ADDED "credit-details-sub-table" class for specific mobile styling
                     creditDetailsHtml = `<div style="margin-top: 15px; text-align:center;"><h2>รายละเอียดลูกหนี้ (เครดิต)</h2><table class="credit-details-table credit-details-sub-table"><thead><tr><th>วันที่</th><th>ผู้ซื้อ</th><th>รายการ</th><th>ยอดเงิน (บาท)</th><th>กำหนดชำระ</th></tr></thead><tbody>${creditRows}</tbody></table></div>`;
                 }
                 
@@ -1890,7 +2004,6 @@ document.addEventListener('DOMContentLoaded', () => {
         manualSaveToBrowser() { try { this.saveData(); this.showToast('✓ บันทึกข้อมูลลงในเบราว์เซอร์แล้ว'); } catch (error) { console.error("บันทึกข้อมูลไม่สำเร็จ:", error); this.showToast("⚠️ เกิดข้อผิดพลาดในการบันทึกข้อมูล", "error"); } },
         saveBackupToFile() { const now = new Date(); const year = now.getFullYear(); const month = String(now.getMonth() + 1).padStart(2, '0'); const day = String(now.getDate()).padStart(2, '0'); const hours = String(now.getHours()).padStart(2, '0'); const minutes = String(now.getMinutes()).padStart(2, '0'); const dateTimeString = `${year}${month}${day}_${hours}${minutes}`; const sellerUsername = this.currentUser.username; const fullFileName = `pos_backup_${sellerUsername}_${dateTimeString}.json`; const dataToSave = this.data; const blob = new Blob([JSON.stringify(dataToSave, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = fullFileName; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); this.showToast(`บันทึกไฟล์ "${fullFileName}" เรียบร้อย`); },
 
-        // ================== START: MODIFIED CODE ==================
         recalculateAllStock() {
             const totalStockIn = new Map();
             const totalSold = new Map();
@@ -1990,8 +2103,75 @@ document.addEventListener('DOMContentLoaded', () => {
             reader.onerror = () => this.showToast("ไม่สามารถอ่านไฟล์ได้", "error");
             reader.readAsText(file, 'UTF-8');
         },
-        // =================== END: MODIFIED CODE ===================
+        
+        // ================== START: NEW RESET FUNCTIONS ==================
+        openResetModal() {
+            // Reset checkboxes to unchecked state every time modal is opened
+            document.getElementById('reset-sales-checkbox').checked = false;
+            document.getElementById('reset-stockins-checkbox').checked = false;
+            document.getElementById('reset-products-checkbox').checked = false;
+            document.getElementById('reset-sellers-checkbox').checked = false;
+            document.getElementById('reset-stores-checkbox').checked = false;
+            document.getElementById('resetModal').style.display = 'flex';
+        },
 
+        closeResetModal() {
+            document.getElementById('resetModal').style.display = 'none';
+        },
+
+        handleSelectiveReset() {
+            const resetSales = document.getElementById('reset-sales-checkbox').checked;
+            const resetStockIns = document.getElementById('reset-stockins-checkbox').checked;
+            const resetProducts = document.getElementById('reset-products-checkbox').checked;
+            const resetSellers = document.getElementById('reset-sellers-checkbox').checked;
+            const resetStores = document.getElementById('reset-stores-checkbox').checked;
+
+            if (!resetSales && !resetStockIns && !resetProducts && !resetSellers && !resetStores) {
+                this.showToast('กรุณาเลือกอย่างน้อยหนึ่งรายการที่จะรีเซ็ต', 'warning');
+                return;
+            }
+
+            let confirmationMessage = "คุณกำลังจะลบข้อมูลต่อไปนี้อย่างถาวร:\n";
+            if(resetSales) confirmationMessage += "\n- ประวัติการขายทั้งหมด";
+            if(resetStockIns) confirmationMessage += "\n- ประวัติการนำเข้าทั้งหมด";
+            if(resetProducts) confirmationMessage += "\n- สินค้าทั้งหมด";
+            if(resetSellers) confirmationMessage += "\n- ผู้ขายทั้งหมด (ยกเว้น Admin)";
+            if(resetStores) confirmationMessage += "\n- ร้านค้าทั้งหมด";
+            
+            confirmationMessage += "\n\nการกระทำนี้ไม่สามารถย้อนกลับได้! พิมพ์ 'CONFIRM' เพื่อยืนยัน:";
+
+            const userConfirmation = prompt(confirmationMessage);
+
+            if (userConfirmation === 'CONFIRM') {
+                if (resetSales) {
+                    this.data.sales = [];
+                }
+                if (resetStockIns) {
+                    this.data.stockIns = [];
+                }
+                if (resetProducts) {
+                    this.data.products = [];
+                }
+                if (resetSellers) {
+                    this.data.users = this.data.users.filter(u => u.role !== 'seller');
+                }
+                if (resetStores) {
+                    this.data.stores = [];
+                }
+
+                this.saveData();
+                this.closeResetModal();
+                this.showToast('ข้อมูลที่เลือกถูกรีเซ็ตเรียบร้อยแล้ว! กำลังรีโหลด...', 'success');
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
+
+            } else {
+                this.showToast('การรีเซ็ตถูกยกเลิก', 'warning');
+            }
+        },
+        // =================== END: NEW RESET FUNCTIONS ===================
+        
         renderProductTable() { const tbody = document.querySelector('#product-table tbody'); if (!tbody) return; tbody.innerHTML = ''; this.data.products.forEach(p => { const tr = document.createElement('tr'); tr.innerHTML = `<td data-label="ชื่อสินค้า">${p.name}</td><td data-label="ราคาทุน">${this.formatNumberSmart(p.costPrice)}</td><td data-label="ราคาขาย">${this.formatNumberSmart(p.sellingPrice)}</td><td data-label="สต็อก">${this.formatNumberSmart(p.stock)}</td><td data-label="หน่วย">${p.unit}</td><td data-label="จัดการ"><div class="action-buttons"><button class="edit-product-btn" data-id="${p.id}" style="background-color: var(--warning-color);">แก้ไข</button><button class="danger delete-product-btn" data-id="${p.id}">ลบ</button></div></td>`; tbody.appendChild(tr); }); },
         
         saveProduct(e) {
@@ -2041,8 +2221,138 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         editProduct(id) { const product = this.data.products.find(p => p.id == id); if(product) { document.getElementById('product-id').value = product.id; document.getElementById('product-name').value = product.name; document.getElementById('product-cost').value = product.costPrice; document.getElementById('product-price').value = product.sellingPrice; document.getElementById('product-stock').value = product.stock; document.getElementById('product-unit').value = product.unit; document.getElementById('product-name').focus(); } },
         deleteProduct(id) { if(confirm('คุณแน่ใจหรือไม่ว่าต้องการลบสินค้านี้?')) { this.data.products = this.data.products.filter(p => p.id != id); this.saveData(); this.renderProductTable(); } },
-        renderStockIn() { const productSelect = document.getElementById('stock-in-product'); productSelect.innerHTML = '<option value="">--- เลือกสินค้า ---</option>'; this.data.products.forEach(p => { productSelect.innerHTML += `<option value="${p.id}">${p.name}</option>`; }); const historyTbody = document.querySelector('#stock-in-history-table tbody'); historyTbody.innerHTML = ''; [...this.data.stockIns].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 20).forEach(si => { const tr = document.createElement('tr'); tr.innerHTML = `<td data-label="วันที่">${new Date(si.date).toLocaleString('th-TH')}</td><td data-label="สินค้า">${si.productName}</td><td data-label="จำนวน">${this.formatNumberSmart(si.quantity)}</td><td data-label="ทุนต่อหน่วย">${this.formatNumberSmart(si.costPerUnit)}</td><td data-label="ยอดรวม">${this.formatNumberSmart(si.quantity * si.costPerUnit)}</td>`; historyTbody.appendChild(tr); }); },
-        saveStockIn(e) { e.preventDefault(); const productId = document.getElementById('stock-in-product').value; const quantity = parseInt(document.getElementById('stock-in-quantity').value); const costPerUnit = parseFloat(document.getElementById('stock-in-cost').value); const product = this.data.products.find(p => p.id == productId); if (product) { product.stock += quantity; const stockInRecord = { id: Date.now(), date: new Date().toISOString(), productId: product.id, productName: product.name, quantity, costPerUnit }; this.data.stockIns.push(stockInRecord); this.saveData(); this.showToast('บันทึกการนำเข้าเรียบร้อย'); document.getElementById('stock-in-form').reset(); this.renderStockIn(); } else { this.showToast('ไม่พบสินค้า'); } },
+        
+        renderStockIn() { 
+            this.clearStockInForm();
+            const productSelect = document.getElementById('stock-in-product'); 
+            productSelect.innerHTML = '<option value="">--- เลือกสินค้า ---</option>'; 
+            this.data.products.forEach(p => { 
+                productSelect.innerHTML += `<option value="${p.id}">${p.name}</option>`; 
+            }); 
+            
+            const historyTbody = document.querySelector('#stock-in-history-table tbody'); 
+            historyTbody.innerHTML = ''; 
+            [...this.data.stockIns].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 50).forEach(si => { 
+                const tr = document.createElement('tr'); 
+                tr.innerHTML = `
+                    <td data-label="วันที่">${new Date(si.date).toLocaleString('th-TH')}</td>
+                    <td data-label="สินค้า">${si.productName}</td>
+                    <td data-label="จำนวน">${this.formatNumberSmart(si.quantity)}</td>
+                    <td data-label="ทุนต่อหน่วย">${this.formatNumberSmart(si.costPerUnit)}</td>
+                    <td data-label="ยอดรวม">${this.formatNumberSmart(si.quantity * si.costPerUnit)}</td>
+                    <td data-label="จัดการ">
+                        <div class="action-buttons">
+                            <button class="edit-stock-in-btn" data-id="${si.id}" style="background-color: var(--warning-color);">แก้ไข</button>
+                            <button class="danger delete-stock-in-btn" data-id="${si.id}">ลบ</button>
+                        </div>
+                    </td>`; 
+                historyTbody.appendChild(tr); 
+            }); 
+        },
+
+        saveStockIn(e) {
+            e.preventDefault();
+            const id = document.getElementById('stock-in-id').value;
+            const productId = document.getElementById('stock-in-product').value;
+            const quantity = parseInt(document.getElementById('stock-in-quantity').value);
+            const costPerUnit = parseFloat(document.getElementById('stock-in-cost').value);
+            
+            if (!productId || isNaN(quantity) || quantity <= 0 || isNaN(costPerUnit) || costPerUnit < 0) {
+                this.showToast('กรุณากรอกข้อมูลให้ครบถ้วนและถูกต้อง', 'error');
+                return;
+            }
+
+            const product = this.data.products.find(p => p.id == productId);
+            if (!product) {
+                this.showToast('ไม่พบสินค้าที่เลือก', 'error');
+                return;
+            }
+
+            if (id) {
+                // --- UPDATE ---
+                const stockInIndex = this.data.stockIns.findIndex(si => si.id == id);
+                if (stockInIndex === -1) {
+                    this.showToast('ไม่พบรายการนำเข้าที่จะแก้ไข', 'error');
+                    return;
+                }
+                const originalStockIn = this.data.stockIns[stockInIndex];
+                const originalProduct = this.data.products.find(p => p.id === originalStockIn.productId);
+
+                // 1. Revert old stock value
+                if (originalProduct) {
+                    originalProduct.stock -= originalStockIn.quantity;
+                }
+
+                // 2. Update the record
+                originalStockIn.productId = product.id;
+                originalStockIn.productName = product.name;
+                originalStockIn.quantity = quantity;
+                originalStockIn.costPerUnit = costPerUnit;
+                // We keep the original date unless we add a date field to the form
+                
+                // 3. Apply new stock value
+                product.stock += quantity;
+
+                this.showToast('แก้ไขข้อมูลการนำเข้าสำเร็จ');
+
+            } else {
+                // --- CREATE ---
+                product.stock += quantity;
+                const stockInRecord = { 
+                    id: Date.now(), 
+                    date: new Date().toISOString(), 
+                    productId: product.id, 
+                    productName: product.name, 
+                    quantity, 
+                    costPerUnit 
+                };
+                this.data.stockIns.push(stockInRecord);
+                this.showToast('บันทึกการนำเข้าเรียบร้อย');
+            }
+            
+            this.saveData();
+            this.renderStockIn(); // This will also clear the form
+            this.renderProductTable(); // Update product table to reflect stock changes
+        },
+        
+        editStockIn(id) {
+            const stockIn = this.data.stockIns.find(si => si.id == id);
+            if (stockIn) {
+                document.getElementById('stock-in-id').value = stockIn.id;
+                document.getElementById('stock-in-product').value = stockIn.productId;
+                document.getElementById('stock-in-quantity').value = stockIn.quantity;
+                document.getElementById('stock-in-cost').value = stockIn.costPerUnit;
+                document.getElementById('stock-in-product').focus();
+            }
+        },
+
+        deleteStockIn(id) {
+            if (!confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรายการนำเข้าสินค้านี้? สต็อกจะถูกปรับลดตามจำนวนที่นำเข้า')) {
+                return;
+            }
+            const stockInIndex = this.data.stockIns.findIndex(si => si.id == id);
+            if (stockInIndex === -1) {
+                this.showToast('ไม่พบรายการนำเข้า', 'error');
+                return;
+            }
+
+            const [stockInToDelete] = this.data.stockIns.splice(stockInIndex, 1);
+            const product = this.data.products.find(p => p.id === stockInToDelete.productId);
+            
+            if (product) {
+                product.stock -= stockInToDelete.quantity;
+            }
+
+            this.saveData();
+            this.showToast('ลบรายการนำเข้าและปรับสต็อกเรียบร้อย');
+            this.renderStockIn();
+            this.renderProductTable();
+        },
+
+        clearStockInForm() {
+            document.getElementById('stock-in-form').reset();
+            document.getElementById('stock-in-id').value = '';
+        },
         
         renderReport(e) {
             const sellerSelect = document.getElementById('report-seller');
@@ -2118,7 +2428,6 @@ document.addEventListener('DOMContentLoaded', () => {
         editStore(id) { const store = this.data.stores.find(s => s.id == id); if (store) { document.getElementById('store-id').value = store.id; document.getElementById('store-name').value = store.name; document.getElementById('store-name').focus(); } },
         deleteStore(id) { const isStoreInUse = this.data.users.some(u => u.storeId == id); if (isStoreInUse) { this.showToast('ไม่สามารถลบร้านค้านี้ได้ เนื่องจากมีผู้ใช้สังกัดอยู่', 'error'); return; } if (confirm('คุณแน่ใจหรือไม่ว่าต้องการลบร้านค้านี้?')) { this.data.stores = this.data.stores.filter(s => s.id != id); this.saveData(); this.renderStoreTable(); this.showToast('ลบร้านค้าเรียบร้อย'); } },
         
-        // === START: CORRECTED FUNCTION 1 ===
         renderUserTable() {
             const tbody = document.querySelector('#user-table tbody');
             if (!tbody) return; 
@@ -2149,14 +2458,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 tbody.appendChild(tr);
             });
             
-            // CORRECTED: Call the new setup function for a new user.
             this.setupUserForm(); 
         },
 
         saveUser(e) {
             e.preventDefault();
 
-            // 1. Get all values from the form
             const id = document.getElementById('user-id').value;
             const username = document.getElementById('user-username').value;
             const password = document.getElementById('user-password').value;
@@ -2164,17 +2471,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const startDate = document.getElementById('user-sales-start-date').value;
             const endDate = document.getElementById('user-sales-end-date').value;
 
-            // Basic validation
             if (!username.trim()) {
                 this.showToast('กรุณากรอกชื่อผู้ใช้', 'error');
                 return;
             }
 
-            // Initialize seller-specific variables
             let assignedProductIds = [];
             let storeId = null;
 
-            // 2. Gather and validate seller-specific data if the role is 'seller'
             if (role === 'seller') {
                 const storeSelect = document.getElementById('user-store-select');
                 storeId = storeSelect ? storeSelect.value : null;
@@ -2183,7 +2487,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     this.showToast('กรุณาระบุร้านค้าสำหรับผู้ขาย', 'error');
                     return;
                 }
-                storeId = parseInt(storeId, 10); // Convert to number
+                storeId = parseInt(storeId, 10); 
 
                 if (!startDate || !endDate) {
                     this.showToast('กรุณากำหนดระยะเวลาการขายให้ครบถ้วน', 'error');
@@ -2197,9 +2501,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 assignedProductIds = Array.from(checkboxes).map(cb => parseInt(cb.value, 10));
             }
 
-            // 3. Handle Edit vs. New User logic
             if (id) {
-                // --- EDITING AN EXISTING USER ---
                 const user = this.data.users.find(u => u.id == id);
                 if (user.username !== username) {
                     this.data.sales.forEach(sale => {
@@ -2218,7 +2520,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     user.salesEndDate = endDate;
                     user.storeId = storeId;
                 } else {
-                    // If role changed from seller to admin, remove seller-specific properties
                     delete user.assignedProductIds;
                     delete user.salesStartDate;
                     delete user.salesEndDate;
@@ -2226,7 +2527,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 this.showToast('แก้ไขข้อมูลผู้ใช้สำเร็จ');
             } else {
-                // --- ADDING A NEW USER ---
                 if (this.data.users.some(u => u.username === username)) {
                     this.showToast('ชื่อผู้ใช้นี้มีอยู่แล้ว', 'error');
                     return;
@@ -2247,15 +2547,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.showToast('เพิ่มผู้ใช้ใหม่สำเร็จ');
             }
 
-            // 6. Final steps
             this.saveData();
             this.renderUserTable();
         },
         
-        // === START: CORRECTED FUNCTION 2 ===
         editUser(id) { 
             const user = this.data.users.find(p => p.id == id);
-            // CORRECTED: Use the new setup function to populate the form for editing.
             if(user) {
                 this.setupUserForm(user);
             }
@@ -2263,7 +2560,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         deleteUser(id) { const user = this.data.users.find(u => u.id == id); if (user && user.username === 'admin') { this.showToast('ไม่สามารถลบผู้ใช้ admin ได้', 'error'); return; } if(confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบผู้ใช้ ${user.username}?`)) { this.data.users = this.data.users.filter(u => u.id != id); this.saveData(); this.renderUserTable(); } },
         
-        // === START: NEW FUNCTION 3 ===
         setupUserForm(user = null) {
             const form = document.getElementById('user-form');
             form.reset();
@@ -2272,7 +2568,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const salesContainer = document.getElementById('user-sales-period-container');
             const storeContainer = document.getElementById('user-store-assignment-container');
             
-            if (user) { // Editing an existing user
+            if (user) { 
                 document.getElementById('user-id').value = user.id;
                 document.getElementById('user-username').value = user.username;
                 document.getElementById('user-role').value = user.role;
@@ -2292,16 +2588,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     salesContainer.style.display = 'none';
                     productContainer.style.display = 'none';
                 }
-            } else { // Setting up for a new user
+            } else { 
                 document.getElementById('user-id').value = '';
                 document.getElementById('user-password').placeholder = 'กำหนดรหัสผ่านสำหรับผู้ใช้ใหม่';
                 
-                // By default, the form resets to "seller", so we show the fields.
                 storeContainer.style.display = 'block';
                 salesContainer.style.display = 'block';
                 productContainer.style.display = 'grid';
-                this.renderUserStoreAssignment(); // Render with no selection
-                this.renderUserProductAssignment(); // Render with no selection
+                this.renderUserStoreAssignment(); 
+                this.renderUserProductAssignment(); 
             }
             document.getElementById('user-username').focus();
         },
@@ -2327,7 +2622,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
         fillPages(){ 
             document.getElementById('page-pos').innerHTML = `<h2>ขายสินค้า (Point of Sale)</h2><div class="pos-layout"><div><form id="add-to-cart-form" style="max-width:none;"><label for="pos-date">วันที่ขาย:</label><input type="date" id="pos-date"><label for="pos-time">เวลา:</label><input type="time" id="pos-time"><label for="pos-product">เลือกสินค้า:</label><select id="pos-product" required></select><label for="pos-quantity">จำนวน:</label><input type="number" id="pos-quantity" value="1" min="1" required><div id="special-price-container" style="display:none; grid-template-columns: 150px 1fr;"><label for="special-price">ราคาขายใหม่:</label><div><input type="number" id="special-price" placeholder="กรอกราคาต่อหน่วย" min="0" step="any"><span id="current-price-info" style="font-size: 0.9em; color: #555; margin-left: 10px;"></span></div></div><div class="form-actions"><button type="submit" class="success">เพิ่มลงตะกร้า</button><button type="button" id="toggle-special-price-btn">ใช้ราคาพิเศษ</button></div></form><h3>รายการในตะกร้า</h3><div class="table-container"><table id="cart-table"><thead><tr><th>สินค้า</th><th>ราคาฯ</th><th>จำนวน</th><th>รวม</th><th>ลบ</th></tr></thead><tbody></tbody></table></div></div><div id="cart-summary"><div id="payment-method-container"><h4>ประเภทการชำระเงิน</h4><div class="payment-options-wrapper"><label><input type="radio" name="payment-method" value="เงินสด" checked> เงินสด</label><label><input type="radio" name="payment-method" value="เงินโอน"> เงินโอน</label><label><input type="radio" name="payment-method" value="เครดิต"> เครดิต</label></div><div id="transfer-fields-container"><div style="margin-top:10px;"><label for="transfer-name" style="text-align:left;font-weight:bold;">ชื่อผู้โอน:</label><input type="text" id="transfer-name"></div></div><div id="credit-fields-container"><div style="margin-top:10px;"><label for="credit-buyer-name" style="text-align:left;font-weight:bold;">ชื่อผู้ซื้อ (เครดิต):</label><input type="text" id="credit-buyer-name"></div><div style="margin-top:10px;"><label for="credit-due-days" style="text-align:left;font-weight:bold;">จำนวนวันเครดิต:</label><input type="number" id="credit-due-days" min="0" placeholder="เช่น 7, 15, 30"></div></div></div><div class="cart-action-row"><span class="cart-total-label">สรุปยอด:</span><div id="cart-total">฿0.00</div><button id="process-sale-btn">ยืนยันการขาย</button></div></div></div>`; 
-            document.getElementById('page-products').innerHTML = `<h2>จัดการสินค้า</h2> <form id="product-form"> <input type="hidden" id="product-id"> <label for="product-name">ชื่อสินค้า:</label> <input type="text" id="product-name" required> <label for="product-cost">ราคาทุน:</label> <input type="number" id="product-cost" min="0" step="0.01" required> <label for="product-price">ราคาขาย:</label> <input type="number" id="product-price" min="0" step="0.01" required> <label for="product-stock">จำนวนในสต็อก:</label> <input type="number" id="product-stock" min="0" required> <label for="product-unit">หน่วย:</label> <input type="text" id="product-unit" placeholder="เช่น ชิ้น, กล่อง" required> <div class="form-actions"> <button type="submit" class="success">บันทึกสินค้า</button> <button type="button" id="clear-product-form-btn" style="background-color:#6c757d;">เคลียร์ฟอร์ม</button> </div> </form> <div class="table-container"><table id="product-table"> <thead> <tr><th>ชื่อสินค้า</th><th>ราคาทุน</th><th>ราคาขาย</th><th>สต็อก</th><th>หน่วย</th><th>จัดการ</th></tr> </thead> <tbody></tbody> </table></div>`; document.getElementById('page-stock-in').innerHTML = `<h2>บันทึกการนำเข้าสินค้า</h2> <form id="stock-in-form"> <label for="stock-in-product">เลือกสินค้า:</label> <select id="stock-in-product" required></select> <label for="stock-in-quantity">จำนวน:</label> <input type="number" id="stock-in-quantity" min="1" required> <label for="stock-in-cost">ราคาทุนต่อหน่วย:</label> <input type="number" id="stock-in-cost" min="0" step="0.01" required> <div class="form-actions"> <button type="submit" class="success">บันทึกการนำเข้า</button> </div> </form> <h3>ประวัติการนำเข้าล่าสุด</h3> <div class="table-container"><table id="stock-in-history-table"> <thead> <tr><th>วันที่</th><th>สินค้า</th><th>จำนวน</th><th>ทุนต่อหน่วย</th><th>ยอดรวม</th></tr> </thead> <tbody></tbody> </table></div>`; document.getElementById('page-sales-history').innerHTML = `<h2>รายการขายย้อนหลัง</h2><div class="table-container"><table id="sales-history-table"><thead><tr><th>วันที่</th><th>เวลา</th><th>รายการสินค้า</th><th>ยอดขายรวม</th><th>กำไรรวม</th><th>ประเภทชำระ</th><th>คนขาย</th><th>ร้านค้า</th><th>จัดการ</th></tr></thead><tbody></tbody></table></div>`; 
+            document.getElementById('page-products').innerHTML = `<h2>จัดการสินค้า</h2> <form id="product-form"> <input type="hidden" id="product-id"> <label for="product-name">ชื่อสินค้า:</label> <input type="text" id="product-name" required> <label for="product-cost">ราคาทุน:</label> <input type="number" id="product-cost" min="0" step="0.01" required> <label for="product-price">ราคาขาย:</label> <input type="number" id="product-price" min="0" step="0.01" required> <label for="product-stock">จำนวนในสต็อก:</label> <input type="number" id="product-stock" min="0" required> <label for="product-unit">หน่วย:</label> <input type="text" id="product-unit" placeholder="เช่น ชิ้น, กล่อง" required> <div class="form-actions"> <button type="submit" class="success">บันทึกสินค้า</button> <button type="button" id="clear-product-form-btn" style="background-color:#6c757d;">เคลียร์ฟอร์ม</button> </div> </form> <div class="table-container"><table id="product-table"> <thead> <tr><th>ชื่อสินค้า</th><th>ราคาทุน</th><th>ราคาขาย</th><th>สต็อก</th><th>หน่วย</th><th>จัดการ</th></tr> </thead> <tbody></tbody> </table></div>`; 
+            document.getElementById('page-stock-in').innerHTML = `<h2>บันทึกการนำเข้าสินค้า</h2> 
+                <form id="stock-in-form"> 
+                    <input type="hidden" id="stock-in-id"> 
+                    <label for="stock-in-product">เลือกสินค้า:</label> <select id="stock-in-product" required></select> 
+                    <label for="stock-in-quantity">จำนวน:</label> <input type="number" id="stock-in-quantity" min="1" required> 
+                    <label for="stock-in-cost">ราคาทุนต่อหน่วย:</label> <input type="number" id="stock-in-cost" min="0" step="0.01" required> 
+                    <div class="form-actions"> 
+                        <button type="submit" class="success">บันทึกการนำเข้า</button> 
+                        <button type="button" id="clear-stock-in-form-btn" style="background-color:#6c757d;">เคลียร์ฟอร์ม</button>
+                    </div> 
+                </form> 
+                <h3>ประวัติการนำเข้าล่าสุด</h3> 
+                <div class="table-container">
+                    <table id="stock-in-history-table"> 
+                        <thead> <tr><th>วันที่</th><th>สินค้า</th><th>จำนวน</th><th>ทุนต่อหน่วย</th><th>ยอดรวม</th><th>จัดการ</th></tr> </thead> 
+                        <tbody></tbody> 
+                    </table>
+                </div>`; 
+            document.getElementById('page-sales-history').innerHTML = `<h2>รายการขายย้อนหลัง</h2><div class="table-container"><table id="sales-history-table"><thead><tr><th>วันที่</th><th>เวลา</th><th>รายการสินค้า</th><th>ยอดขายรวม</th><th>กำไรรวม</th><th>ประเภทชำระ</th><th>คนขาย</th><th>ร้านค้า</th><th>จัดการ</th></tr></thead><tbody></tbody></table></div>`; 
             document.getElementById('page-reports').innerHTML = `<h2>รายงานกำไร/ขาดทุน</h2> 
             <form id="report-filter-form"> 
                 <label>ตั้งแต่วันที่:<input type="date" id="report-start-date"></label> 
@@ -2348,8 +2662,8 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>`; 
             document.getElementById('page-summary').innerHTML = `<h2>สรุปข้อมูลการขายแบบละเอียด</h2> 
             <div class="summary-section"> <h3>สรุปด่วน</h3> <div class="summary-form-inline"> <button type="button" id="summary-today-btn" style="background-color: var(--warning-color);">สรุปวันนี้</button> <button type="button" id="summary-all-btn" style="background-color: #673ab7;">สรุปทั้งหมด</button> </div> </div> 
-            <div class="summary-section"> <h3>สรุปวันที่เลือก</h3> <div class="summary-form-inline"> <label>เลือกวันที่: <input type="date" id="summary-single-date"></label> <button type="button" id="summary-by-day-btn" style="background-color: #03a9f4;">สรุปวันที่เลือก</button> </div> </div> 
-            <div class="summary-section"> <h3>สรุปวันที่ถึงวันที่</h3> <div class="summary-form-inline"> <label>จากวันที่: <input type="date" id="summary-range-start"></label> <label>ถึงวันที่: <input type="date" id="summary-range-end"></label> <button type="button" id="summary-range-btn" style="background-color: #009688;">สรุปตามช่วงวัน</button> </div> </div>
+            <div class="summary-section"> <h3>สรุปยอดสะสม ณ วันที่เลือก</h3> <div class="summary-form-inline"> <label>เลือกวันที่: <input type="date" id="summary-single-date"></label> <button type="button" id="summary-by-day-btn" style="background-color: #03a9f4;">สรุปยอดสะสม</button> </div> </div> 
+            <div class="summary-section"> <h3>สรุปตามช่วงวันที่</h3> <div class="summary-form-inline"> <label>จากวันที่: <input type="date" id="summary-range-start"></label> <label>ถึงวันที่: <input type="date" id="summary-range-end"></label> <button type="button" id="summary-range-btn" style="background-color: #009688;">สรุปตามช่วงวัน</button> </div> </div>
             <div class="summary-section"> <h3>สรุปลูกหนี้ทั้งหมด (เครดิต)</h3> <div class="summary-form-inline"> <label>ผู้ขาย: <select id="summary-credit-seller"></select></label> <label>จากวันที่: <input type="date" id="summary-credit-start-date"></label> <label>ถึงวันที่: <input type="date" id="summary-credit-end-date"></label> <button type="button" id="summary-credit-btn" class="danger">สรุปข้อมูลลูกหนี้</button> </div> </div>
             <div class="summary-section"> <h3>สรุปเงินโอนทั้งหมด</h3> <div class="summary-form-inline"> <label>ผู้ขาย: <select id="summary-transfer-seller"></select></label> <label>จากวันที่: <input type="date" id="summary-transfer-start-date"></label> <label>ถึงวันที่: <input type="date" id="summary-transfer-end-date"></label> <button type="button" id="summary-transfer-btn" style="background-color: #007bff;">สรุปข้อมูลเงินโอน</button> </div> </div>`; 
             document.getElementById('page-stores').innerHTML = `<h2>จัดการร้านค้า</h2> <form id="store-form"> <input type="hidden" id="store-id"> <label for="store-name">ชื่อร้านค้า:</label> <input type="text" id="store-name" required> <div class="form-actions"> <button type="submit" class="success">บันทึกร้านค้า</button> <button type="button" id="clear-store-form-btn" style="background-color:#6c757d;">เคลียร์ฟอร์ม</button> </div> </form> <div class="table-container"><table id="store-table"> <thead> <tr><th>ชื่อร้านค้า</th><th>จัดการ</th></tr> </thead> <tbody></tbody> </table></div>`;
@@ -2358,6 +2672,8 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="data-management-section admin-only data-restore-section"><h3>โหลดข้อมูลจากไฟล์ (Restore)</h3><p style="color: var(--danger-color);"><b>คำเตือน:</b> การโหลดข้อมูลจากไฟล์จะรวมข้อมูลเข้ากับข้อมูลปัจจุบัน ข้อมูลที่ซ้ำกันจะถูกเขียนทับด้วยข้อมูลจากไฟล์!</p><input type="file" id="data-file-input" style="display: none;" accept=".json,application/json"><button type="button" id="load-from-file-btn" style="background-color: #E97132;">เลือกไฟล์สำรอง (.json)</button></div>
             
             <div class="data-management-section admin-only"><h3>สำรองข้อมูล (Backup)</h3><p>สำรองข้อมูลทั้งหมด (ผู้ใช้, สินค้า, ประวัติการขาย) ลงในไฟล์ JSON เพื่อเก็บไว้หรือย้ายไปยังเครื่องอื่น</p><button id="save-to-file-btn" class="success">บันทึกข้อมูลทั้งหมดลงไฟล์</button><button id="save-to-browser-btn" style="background-color: #007bff;">บันทึกข้อมูลปัจจุบันลงในเบราว์เซอร์</button></div>
+
+            <div class="data-management-section admin-only" style="border-color: var(--danger-color);"><h3 style="color: var(--danger-color);">รีเซ็ตข้อมูล (*** การกระทำนี้ไม่สามารถย้อนกลับได้ ***)</h3><p>เลือกเพื่อล้างข้อมูลเฉพาะส่วนที่ต้องการ ข้อมูลผู้ใช้ Admin และข้อมูลร้านค้าจะไม่ได้รับผลกระทบ</p><button id="open-reset-modal-btn" class="danger">เปิดหน้าต่างรีเซ็ตข้อมูล</button></div>
 
             <!-- Seller Sections -->
             <div class="collapsible-bar seller-only" data-target="seller-backup-content"><span>บันทึกข้อมูล (Backup)</span><span class="arrow">▶</span></div>
@@ -2398,15 +2714,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 if (e.target.id === 'clear-product-form-btn') { document.getElementById('product-form').reset(); document.getElementById('product-id').value = ''; } 
                 if (e.target.classList.contains('edit-product-btn')) this.editProduct(e.target.dataset.id); 
-
-                // === START CORRECTION ===
                 if (e.target.classList.contains('delete-product-btn')) this.deleteProduct(e.target.dataset.id);
-                // === END CORRECTION ===
+                
+                if (e.target.id === 'clear-stock-in-form-btn') this.clearStockInForm();
+                if (e.target.classList.contains('edit-stock-in-btn')) this.editStockIn(e.target.dataset.id);
+                if (e.target.classList.contains('delete-stock-in-btn')) this.deleteStockIn(e.target.dataset.id);
 
                 if (e.target.id === 'clear-store-form-btn') { document.getElementById('store-form').reset(); document.getElementById('store-id').value = ''; }
                 if (e.target.classList.contains('edit-store-btn')) this.editStore(e.target.dataset.id);
                 if (e.target.classList.contains('delete-store-btn')) this.deleteStore(e.target.dataset.id);
-                if (e.target.id === 'clear-user-form-btn') this.setupUserForm(); // Corrected call
+                if (e.target.id === 'clear-user-form-btn') this.setupUserForm();
                 if (e.target.classList.contains('edit-user-btn')) this.editUser(e.target.dataset.id); 
                 if (e.target.classList.contains('delete-user-btn')) this.deleteUser(e.target.dataset.id); 
                 
@@ -2420,12 +2737,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
                 
-                // Admin and Seller backup buttons
                 if (e.target.id === 'load-from-file-btn') document.getElementById('data-file-input').click(); 
                 if (e.target.id === 'save-to-file-btn' || e.target.id === 'save-to-file-btn-seller') this.saveBackupToFile(); 
-                if (e.target.id === 'save-to-browser-btn' || e.target.id === 'save-to-browser-btn-seller') this.manualSaveToBrowser(); 
+                if (e.target.id === 'save-to-browser-btn' || e.target.id === 'save-to-browser-btn-seller') this.manualSaveToBrowser();
+                if (e.target.id === 'open-reset-modal-btn') this.openResetModal();
                 
-                // Summary buttons
                 if (e.target.id === 'summary-today-btn') this.summarizeToday(); 
                 if (e.target.id === 'summary-all-btn') this.summarizeAll(); 
                 if (e.target.id === 'summary-by-day-btn') this.summarizeByDay(); 
@@ -2461,11 +2777,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (e.target.id === 'data-file-input') this.promptLoadFromFile(e); 
                 if (e.target.id === 'pos-product') this.updateSpecialPriceInfo(); 
                 
-                // Automatically update report on filter change
                 if (['report-start-date', 'report-end-date', 'report-seller'].includes(e.target.id)) {
                     this.renderReport(e);
                 }
+
+                // Dependency logic: If user checks "Products", auto-check "Sales" and "Stock-ins"
+                if (e.target.id === 'reset-products-checkbox') {
+                    if (e.target.checked) {
+                        document.getElementById('reset-sales-checkbox').checked = true;
+                        document.getElementById('reset-stockins-checkbox').checked = true;
+                    }
+                }
             }); 
+
+            // Add event listeners for the new reset modal
+            document.getElementById('cancel-reset-btn').addEventListener('click', () => this.closeResetModal());
+            document.getElementById('confirm-selective-reset-btn').addEventListener('click', () => this.handleSelectiveReset());
         },
     };
     
