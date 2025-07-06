@@ -1,6 +1,6 @@
 {
-  "name": "lotto Apps",
-  "short_name": "LottoApp",
+  "name": "๋Juckphai",
+  "short_name": "juckApp",
   "description": "ชุดเครื่องมือและแอปพลิเคชันโดย Juckphai",
   "start_url": "./01.html",
   "display": "standalone",
