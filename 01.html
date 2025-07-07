@@ -317,6 +317,37 @@
             justify-self: start;
             max-width: 150px;
         }
+        
+        /* NEW: Styles for Sales History Export */
+        #sales-history-export-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: flex-end;
+            justify-content: center;
+            background-color: #eef5ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin: -10px auto 25px auto;
+            border: 1px solid var(--primary-color);
+        }
+        #sales-history-export-form label {
+            font-weight: bold;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        #sales-history-export-form input[type="date"] {
+            padding: 8px;
+            border-radius: 5px;
+            min-width: 150px;
+        }
+        #export-sales-history-csv-btn {
+            padding: 10px 20px;
+            font-size: 1em;
+            background-color: #008CBA; /* A different blue */
+        }
+
 
         .data-management-section { border: 1px solid var(--border-color); padding: 20px; margin-top: 20px; border-radius: 8px; background: #fafafa; text-align: center; }
         .data-management-section h3 { margin-top: 0; border-bottom: 1px solid #BFBFBF; padding-bottom: 10px; }
@@ -1367,7 +1398,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (sellerStartDate) {
                 reportStartDate = sellerStartDate;
             } else {
-                const allDates = myCreditSales.map(s => new Date(s.date));
+            const allDates = myCreditSales.map(s => new Date(s.date));
                 reportStartDate = new Date(Math.min.apply(null, allDates));
                 reportStartDate.setHours(0,0,0,0);
             }
@@ -1694,10 +1725,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const formatCurrency = (num) => this.formatNumberSmart(num);
             
             const formatSummaryTimestamp = (date) => {
+                const datePart = this.formatThaiDateShortYear(date);
                 const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: false };
-                const datePart = new Date(date).toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' });
                 const timePart = date.toLocaleTimeString('th-TH', timeOptions);
-                return `${datePart} ${timePart} น.`;
+                return `${datePart} เวลา ${timePart} น.`;
             };
 
             const isSellerReport = !!sellerIdFilter;
@@ -1974,6 +2005,98 @@ document.addEventListener('DOMContentLoaded', () => {
             URL.revokeObjectURL(link.href);
             this.showToast(`ส่งออกไฟล์ CSV '${fileName}' สำเร็จ`);
         },
+
+        // ===============================================
+        // START: NEW FUNCTION FOR SALES HISTORY CSV EXPORT
+        // ===============================================
+        exportSalesHistoryToCsv() {
+            const startDateStr = document.getElementById('export-sales-start-date').value;
+            const endDateStr = document.getElementById('export-sales-end-date').value;
+
+            if (!startDateStr || !endDateStr) {
+                this.showToast('กรุณาเลือกวันที่เริ่มต้นและสิ้นสุด', 'warning');
+                return;
+            }
+
+            const startDate = new Date(startDateStr);
+            startDate.setHours(0, 0, 0, 0);
+
+            const endDate = new Date(endDateStr);
+            endDate.setHours(23, 59, 59, 999);
+
+            if (startDate > endDate) {
+                this.showToast('วันที่เริ่มต้นต้องมาก่อนวันที่สิ้นสุด', 'error');
+                return;
+            }
+
+            const filteredSales = this.data.sales.filter(sale => {
+                const saleDate = new Date(sale.date);
+                return saleDate >= startDate && saleDate <= endDate;
+            });
+
+            if (filteredSales.length === 0) {
+                this.showToast('ไม่พบรายการขายในช่วงวันที่ที่เลือก', 'info');
+                return;
+            }
+
+            // Sort by date, most recent first
+            filteredSales.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            let csvRows = [];
+            // Add Headers
+            csvRows.push(['วันที่', 'เวลา', 'รายการสินค้า', 'ราคาต่อหน่วย', 'จำนวน', 'ราคารวมต่อรายการ', 'ยอดขายรวม (บาท)', 'กำไรรวม (บาท)', 'ประเภทชำระ', 'รายละเอียดชำระ', 'กำหนดชำระ', 'ผู้ขาย', 'ร้านค้า']);
+
+            // Add Data Rows
+            filteredSales.forEach(sale => {
+                const saleDate = new Date(sale.date);
+                const dateString = this.formatThaiDateShortYear(sale.date);
+                const timeString = `${String(saleDate.getHours()).padStart(2, '0')}:${String(saleDate.getMinutes()).padStart(2, '0')}`;
+                
+                let paymentDetail = '-';
+                if (sale.paymentMethod === 'เครดิต') {
+                    paymentDetail = sale.buyerName || '-';
+                } else if (sale.paymentMethod === 'เงินโอน') {
+                    paymentDetail = sale.transferorName || '-';
+                }
+                const dueDateString = this.formatThaiDateShortYear(sale.creditDueDate);
+
+                // For sales with multiple items, we list the main info only on the first line
+                sale.items.forEach((item, index) => {
+                    const itemTotal = item.price * item.quantity;
+                    const row = [
+                        index === 0 ? dateString : '',
+                        index === 0 ? timeString : '',
+                        item.name + (item.isSpecialPrice ? ' (พิเศษ)' : ''),
+                        this.formatNumberSmart(item.price),
+                        this.formatNumberSmart(item.quantity),
+                        this.formatNumberSmart(itemTotal),
+                        index === 0 ? this.formatNumberSmart(sale.total) : '',
+                        index === 0 ? this.formatNumberSmart(sale.profit) : '',
+                        index === 0 ? (sale.paymentMethod || 'เงินสด') : '',
+                        index === 0 ? paymentDetail : '',
+                        index === 0 ? dueDateString : '',
+                        index === 0 ? (sale.sellerName || '-') : '',
+                        index === 0 ? (sale.storeName || '-') : ''
+                    ];
+                    csvRows.push(row);
+                });
+            });
+
+            const csvContent = csvRows.map(row => row.map(field => `"${String(field).replace(/"/g, '""')}"`).join(',')).join("\n");
+            const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+            
+            const fileName = `Sales_History_${startDateStr}_to_${endDateStr}.csv`;
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = fileName;
+            link.click();
+            URL.revokeObjectURL(link.href);
+            this.showToast(`ส่งออกไฟล์ CSV '${fileName}' สำเร็จ`);
+        },
+        // ===============================================
+        // END: NEW FUNCTION
+        // ===============================================
+
 
         renderPos(payload = null) {
             this.editingSaleContext = null;
@@ -2934,7 +3057,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('user-commission-cash').checked = false;
                 document.getElementById('user-commission-transfer').checked = false;
                 document.getElementById('user-commission-credit').checked = false;
-
                 this.renderUserStoreAssignment(); 
                 this.renderUserProductAssignment(); 
             }
@@ -2965,7 +3087,25 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('page-products').innerHTML = `<h2>จัดการสินค้า</h2> <p style="text-align:center; margin-top:-15px; margin-bottom:20px;">ในหน้านี้ใช้สำหรับสร้างและแก้ไขรายละเอียดสินค้า (ชื่อ, ราคา, หน่วย) เท่านั้น <br>การเพิ่มสต็อกสินค้าต้องทำผ่านหน้า "นำเข้าสินค้า" เท่านั้น</p><form id="product-form"> <input type="hidden" id="product-id"> <label for="product-name">ชื่อสินค้า:</label> <input type="text" id="product-name" required> <label for="product-cost">ราคาทุน:</label> <input type="number" id="product-cost" min="0" step="0.01" required> <label for="product-price">ราคาขาย:</label> <input type="number" id="product-price" min="0" step="0.01" required> <label for="product-unit">หน่วย:</label> <input type="text" id="product-unit" placeholder="เช่น ชิ้น, กล่อง" required> <div class="form-actions"> <button type="submit" class="success">บันทึกสินค้า</button> <button type="button" id="clear-product-form-btn" style="background-color:#6c757d;">เคลียร์ฟอร์ม</button> </div> </form> <div class="table-container"><table id="product-table"> <thead> <tr><th>ชื่อสินค้า</th><th>ราคาทุน</th><th>ราคาขาย</th><th>สต็อก</th><th>หน่วย</th><th>จัดการ</th></tr> </thead> <tbody></tbody> </table></div>`; 
             document.getElementById('page-stock-in').innerHTML = `<h2>บันทึกการนำเข้าสินค้า</h2> <form id="stock-in-form"> <label for="stock-in-product">เลือกสินค้า:</label> <select id="stock-in-product" required></select> <label for="stock-in-quantity">จำนวน:</label> <input type="number" id="stock-in-quantity" min="1" required> <label for="stock-in-cost">ราคาทุนต่อหน่วย:</label> <input type="number" id="stock-in-cost" min="0" step="0.01" required> <div class="form-actions"> <button type="submit" class="success">บันทึกการนำเข้า</button> </div> </form> <h3>ประวัติการนำเข้าล่าสุด</h3> <div class="table-container"><table id="stock-in-history-table"> <thead> <tr><th>วันที่</th><th>เวลา</th><th>สินค้า</th><th>จำนวน</th><th>ทุนต่อหน่วย</th><th>ยอดรวม</th></tr> </thead> <tbody></tbody> </table></div>`; 
             document.getElementById('page-stock-out').innerHTML = `<h2>ปรับสต็อก (นำออก)</h2> <form id="stock-out-form"> <label for="stock-out-product">เลือกสินค้า:</label> <select id="stock-out-product" required></select> <label for="stock-out-quantity">จำนวนที่นำออก:</label> <input type="number" id="stock-out-quantity" min="1" required> <label for="stock-out-reason">เหตุผล:</label> <input type="text" id="stock-out-reason" placeholder="เช่น หมดอายุ, ชำรุด, นับสต็อก" required> <div class="form-actions"> <button type="submit" class="danger">ยืนยันการนำออก</button> </div> </form> <h3>ประวัติการนำออกล่าสุด</h3> <div class="table-container"><table id="stock-out-history-table"> <thead> <tr><th>วันที่</th><th>เวลา</th><th>สินค้า</th><th>จำนวน</th><th>เหตุผล</th></tr> </thead> <tbody></tbody> </table></div>`;
-            document.getElementById('page-sales-history').innerHTML = `<h2>รายการขายย้อนหลัง</h2><div class="table-container"><table id="sales-history-table"><thead><tr><th>วันที่</th><th>เวลา</th><th>รายการสินค้า</th><th>ยอดขายรวม</th><th>กำไรรวม</th><th>ประเภทชำระ</th><th>คนขาย</th><th>ร้านค้า</th><th>จัดการ</th></tr></thead><tbody></tbody></table></div>`; 
+            // === START: UPDATED SALES HISTORY PAGE HTML ===
+            document.getElementById('page-sales-history').innerHTML = `
+                <h2>รายการขายย้อนหลัง</h2>
+                <div id="sales-history-export-form">
+                    <label>ตั้งแต่วันที่: <input type="date" id="export-sales-start-date"></label>
+                    <label>ถึงวันที่: <input type="date" id="export-sales-end-date"></label>
+                    <button type="button" id="export-sales-history-csv-btn">ส่งออกเป็น CSV</button>
+                </div>
+                <div class="table-container">
+                    <table id="sales-history-table">
+                        <thead>
+                            <tr>
+                                <th>วันที่</th><th>เวลา</th><th>รายการสินค้า</th><th>ยอดขายรวม</th><th>กำไรรวม</th><th>ประเภทชำระ</th><th>คนขาย</th><th>ร้านค้า</th><th>จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>`;
+            // === END: UPDATED SALES HISTORY PAGE HTML ===
             document.getElementById('page-reports').innerHTML = `<h2>รายงานกำไร/ขาดทุน</h2> <form id="report-filter-form"> <label>ตั้งแต่วันที่:<input type="date" id="report-start-date"></label> <label>ถึงวันที่:<input type="date" id="report-end-date"></label> <label>คนขาย:<select id="report-seller"><option value="all">ทั้งหมด</option></select></label> <button type="submit" id="report-generate-btn">สร้างรายงาน</button> </form> <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 20px; text-align: center;"> <div style="background: #f9f9f9; border: 1px solid var(--border-color); padding: 15px; border-radius: 5px;"> <h3>ยอดขายรวม</h3><p id="report-total-sales" style="font-size: 1.5em; font-weight: bold;">฿0.00</p> </div> <div style="background: #f9f9f9; border: 1px solid var(--border-color); padding: 15px; border-radius: 5px;"> <h3>ต้นทุนรวม</h3><p id="report-total-cost" style="font-size: 1.5em; font-weight: bold;">฿0.00</p> </div> <div style="background: #f9f9f9; border: 1px solid var(--border-color); padding: 15px; border-radius: 5px;"> <h3>กำไรสุทธิ</h3><p id="report-net-profit" style="font-size: 1.5em; font-weight: bold; color: var(--success-color);">฿0.00</p> </div> </div>`; 
             document.getElementById('page-summary').innerHTML = `<h2>สรุปข้อมูลการขายแบบละเอียด</h2><div class="summary-section"> <h3>สรุปด่วน</h3> <div class="summary-form-inline"> <button type="button" id="summary-today-btn" style="background-color: var(--warning-color);">สรุปวันนี้</button> <button type="button" id="summary-all-btn" style="background-color: #673ab7;">สรุปทั้งหมด</button> </div> </div> <div class="summary-section"> <h3>สรุปวันที่เลือก</h3> <div class="summary-form-inline"> <label>เลือกวันที่: <input type="date" id="summary-single-date"></label> <button type="button" id="summary-by-day-btn" style="background-color: #03a9f4;">สรุปวันที่เลือก</button> </div> </div> <div class="summary-section"> <h3>สรุปวันที่ถึงวันที่</h3> <div class="summary-form-inline"> <label>จากวันที่: <input type="date" id="summary-range-start"></label> <label>ถึงวันที่: <input type="date" id="summary-range-end"></label> <button type="button" id="summary-range-btn" style="background-color: #009688;">สรุปตามช่วงวัน</button> </div> </div><div class="summary-section"> <h3>สรุปลูกหนี้ทั้งหมด (เครดิต)</h3> <div class="summary-form-inline"> <label>ผู้ขาย: <select id="summary-credit-seller"></select></label> <label>จากวันที่: <input type="date" id="summary-credit-start-date"></label> <label>ถึงวันที่: <input type="date" id="summary-credit-end-date"></label> <button type="button" id="summary-credit-btn" class="danger">สรุปข้อมูลลูกหนี้</button> </div> </div><div class="summary-section"> <h3>สรุปเงินโอนทั้งหมด</h3> <div class="summary-form-inline"> <label>ผู้ขาย: <select id="summary-transfer-seller"></select></label> <label>จากวันที่: <input type="date" id="summary-transfer-start-date"></label> <label>ถึงวันที่: <input type="date" id="summary-transfer-end-date"></label> <button type="button" id="summary-transfer-btn" style="background-color: #007bff;">สรุปข้อมูลเงินโอน</button> </div> </div>`; 
             document.getElementById('page-stores').innerHTML = `<h2>จัดการร้านค้า</h2> <form id="store-form"> <input type="hidden" id="store-id"> <label for="store-name">ชื่อร้านค้า:</label> <input type="text" id="store-name" required> <div class="form-actions"> <button type="submit" class="success">บันทึกร้านค้า</button> <button type="button" id="clear-store-form-btn" style="background-color:#6c757d;">เคลียร์ฟอร์ม</button> </div> </form> <div class="table-container"><table id="store-table"> <thead> <tr><th>ชื่อร้านค้า</th><th>จัดการ</th></tr> </thead> <tbody></tbody> </table></div>`;
@@ -3028,6 +3168,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (e.target.classList.contains('edit-user-btn')) this.editUser(e.target.dataset.id); 
                 if (e.target.classList.contains('delete-user-btn')) this.deleteUser(e.target.dataset.id); 
                 
+                // === START: NEW EVENT LISTENER FOR SALES HISTORY EXPORT ===
+                if (e.target.id === 'export-sales-history-csv-btn') {
+                    this.exportSalesHistoryToCsv();
+                }
+                // === END: NEW EVENT LISTENER ===
+
                 const collapsibleBar = e.target.closest('.collapsible-bar');
                 if (collapsibleBar) {
                     const targetId = collapsibleBar.dataset.target;
