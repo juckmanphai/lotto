@@ -1236,7 +1236,8 @@ document.addEventListener('DOMContentLoaded', () => {
             
             let totalCredit = 0;
             let creditRows = '';
-            filteredCreditSales.forEach(s => {
+            // *** UPDATED: Sort by most recent date first ***
+            [...filteredCreditSales].sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(s => {
                 totalCredit += s.total;
                 const itemsList = s.items.map(item => { 
                     const product = this.data.products.find(p => p.id === item.productId); 
@@ -1505,7 +1506,8 @@ document.addEventListener('DOMContentLoaded', () => {
             
             let totalTransfer = 0;
             let transferRows = '';
-            filteredTransferSales.forEach(s => {
+            // *** UPDATED: Sort by most recent date first ***
+            [...filteredTransferSales].sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(s => {
                 totalTransfer += s.total;
                 const itemsList = s.items.map(item => { 
                     const product = this.data.products.find(p => p.id === item.productId); 
@@ -1563,7 +1565,8 @@ document.addEventListener('DOMContentLoaded', () => {
             csvRows.push(['วันที่', 'ผู้โอน', 'ผู้ขาย', 'รายการสินค้า', 'ยอดเงิน (บาท)']);
             
             let totalTransfer = 0;
-            filteredTransferSales.forEach(s => {
+            // *** UPDATED: Sort by most recent date first for CSV export ***
+            [...filteredTransferSales].sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(s => {
                 totalTransfer += s.total;
                 const itemsList = s.items.map(item => { 
                     const product = this.data.products.find(p => p.id === item.productId); 
@@ -1761,7 +1764,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const creditSalesDetails = this.data.sales.filter(s => s.sellerId == sellerId && s.paymentMethod === 'เครดิต' && new Date(s.date) >= startDate && new Date(s.date) <= endDate);
                 if (creditSalesDetails.length > 0) {
                     let creditRows = '';
-                    creditSalesDetails.forEach(s => {
+                    // *** UPDATED: Sort by most recent date first ***
+                    creditSalesDetails.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(s => {
                         const itemsList = s.items.map(item => { const product = this.data.products.find(p => p.id === item.productId); const unit = product ? product.unit : 'หน่วย'; return `${item.name}( ${this.formatNumberSmart(item.quantity)} ${unit} )`; }).join(', ');
                         creditRows += `<tr><td data-label="วันที่">${this.formatThaiDateShortYear(s.date)}</td><td data-label="ผู้ซื้อ">${s.buyerName || '-'}</td><td data-label="รายการ">${itemsList}</td><td data-label="ยอดเงิน (บาท)">${formatCurrency(s.total)}</td><td data-label="กำหนดชำระ">${this.formatThaiDateShortYear(s.creditDueDate)}</td></tr>`;
                     });
@@ -1910,7 +1914,8 @@ document.addEventListener('DOMContentLoaded', () => {
             csvRows.push(['วันที่', 'ผู้ซื้อ', 'ผู้ขาย', 'รายการสินค้า', 'ยอดเงิน (บาท)', 'กำหนดชำระ']);
             
             let totalCredit = 0;
-            filteredCreditSales.forEach(s => {
+            // *** UPDATED: Sort by most recent date first for CSV export ***
+            [...filteredCreditSales].sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(s => {
                 totalCredit += s.total;
                 const itemsList = s.items.map(item => { 
                     const product = this.data.products.find(p => p.id === item.productId); 
