@@ -2481,7 +2481,37 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         
         mergeData(dataFromFile) {
-            this._mergeSingleArray(this.data.users, dataFromFile.users, 'id');
+            // =========================================================
+            // START OF CHANGES: แก้ไขการรวมข้อมูลผู้ใช้ (Users)
+            // =========================================================
+            if (dataFromFile.users && Array.isArray(dataFromFile.users)) {
+                // ค้นหา admin ในข้อมูลปัจจุบัน
+                const currentAdmin = this.data.users.find(u => u.username === 'admin');
+                
+                // ค้นหา admin ในข้อมูลจากไฟล์ที่นำเข้า
+                const importedAdmin = dataFromFile.users.find(u => u.username === 'admin');
+
+                // 1. อัปเดตข้อมูล Admin (กรณีพิเศษ)
+                // ถ้าเจอ admin ทั้งในระบบปัจจุบันและในไฟล์, ให้อัปเดตข้อมูลของ admin ปัจจุบัน
+                // โดยใช้ข้อมูลจากไฟล์ (เช่น อัปเดตรหัสผ่าน) เพื่อให้มี admin เพียงคนเดียว
+                if (currentAdmin && importedAdmin) {
+                    currentAdmin.password = importedAdmin.password;
+                    // หากมี field อื่นๆ ของ admin ก็สามารถอัปเดตตรงนี้ได้
+                }
+
+                // 2. รวมข้อมูลผู้ขาย (Sellers)
+                // กรองเอาเฉพาะผู้ใช้ที่ไม่ใช่ admin (คือ sellers) จากไฟล์ที่นำเข้ามา
+                const importedSellers = dataFromFile.users.filter(u => u.role !== 'admin');
+                
+                // ใช้ฟังก์ชัน _mergeSingleArray ที่ทำงานได้ดีอยู่แล้ว เพื่อรวมข้อมูล sellers
+                // โดยจะใช้ id ในการตรวจสอบความซ้ำซ้อน ซึ่งถูกต้องสำหรับ sellers
+                this._mergeSingleArray(this.data.users, importedSellers, 'id');
+            }
+            // =========================================================
+            // END OF CHANGES
+            // =========================================================
+
+            // ส่วนที่เหลือยังทำงานเหมือนเดิม เพราะไม่มีปัญหา
             this._mergeSingleArray(this.data.stores, dataFromFile.stores, 'id');
             this._mergeSingleArray(this.data.sales, dataFromFile.sales, 'id');
             this._mergeSingleArray(this.data.stockIns, dataFromFile.stockIns, 'id');
