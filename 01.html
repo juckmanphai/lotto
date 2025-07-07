@@ -847,6 +847,16 @@
                 <input type="text" id="username" required>
                 <label for="password">รหัสผ่าน:</label>
                 <input type="password" id="password" required>
+                
+                <!-- === START: REMEMBER ME CHECKBOX === -->
+                <div style="grid-column: 1 / -1; text-align: left; margin: 5px 0 10px 0;">
+                    <label style="font-weight: normal; cursor: pointer;">
+                        <input type="checkbox" id="remember-me">
+                        จดจำการเข้าสู่ระบบในครั้งถัดไป
+                    </label>
+                </div>
+                <!-- === END: REMEMBER ME CHECKBOX === -->
+
                 <div class="form-actions">
                     <button type="submit" class="success">เข้าสู่ระบบ</button>
                 </div>
@@ -1093,9 +1103,67 @@ document.addEventListener('DOMContentLoaded', () => {
             } 
         },
         saveData() { localStorage.setItem('posData', JSON.stringify(this.data)); },
-        checkLoginState() { const userJson = sessionStorage.getItem('posCurrentUser'); if(userJson) { const sessionUser = JSON.parse(userJson); this.currentUser = this.data.users.find(u => u.id === sessionUser.id); if (this.currentUser) { this.showMainApp(); } else { this.logout(); } } else { this.showLoginScreen(); } },
-        login(username, password) { const user = this.data.users.find(u => u.username === username && u.password === password); if (user) { this.currentUser = user; sessionStorage.setItem('posCurrentUser', JSON.stringify(this.currentUser)); this.showMainApp(); document.getElementById('login-error').textContent = ''; } else { document.getElementById('login-error').textContent = 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง'; } },
-        logout() { this.currentUser = null; sessionStorage.removeItem('posCurrentUser'); this.showLoginScreen(); },
+        
+        // === START: UPDATED LOGIN/LOGOUT LOGIC ===
+        checkLoginState() {
+            // Check localStorage first (for 'Remember Me')
+            const rememberedUserJson = localStorage.getItem('posCurrentUser');
+            if (rememberedUserJson) {
+                const rememberedUser = JSON.parse(rememberedUserJson);
+                this.currentUser = this.data.users.find(u => u.id === rememberedUser.id);
+                if (this.currentUser) {
+                    this.showMainApp();
+                    return; // Found user, exit function
+                }
+            }
+
+            // If not found in localStorage, check sessionStorage as usual
+            const sessionUserJson = sessionStorage.getItem('posCurrentUser');
+            if (sessionUserJson) {
+                const sessionUser = JSON.parse(sessionUserJson);
+                this.currentUser = this.data.users.find(u => u.id === sessionUser.id);
+                if (this.currentUser) {
+                    this.showMainApp();
+                } else {
+                    this.logout();
+                }
+            } else {
+                this.showLoginScreen();
+            }
+        },
+        login(username, password) {
+            const user = this.data.users.find(u => u.username === username && u.password === password);
+            if (user) {
+                this.currentUser = user;
+                const rememberMe = document.getElementById('remember-me').checked;
+
+                // Always clear old sessions first
+                sessionStorage.removeItem('posCurrentUser');
+                localStorage.removeItem('posCurrentUser');
+
+                if (rememberMe) {
+                    // If 'Remember Me' is checked, store in localStorage
+                    localStorage.setItem('posCurrentUser', JSON.stringify(this.currentUser));
+                } else {
+                    // Otherwise, store in sessionStorage (default behavior)
+                    sessionStorage.setItem('posCurrentUser', JSON.stringify(this.currentUser));
+                }
+
+                this.showMainApp();
+                document.getElementById('login-error').textContent = '';
+            } else {
+                document.getElementById('login-error').textContent = 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';
+            }
+        },
+        logout() {
+            this.currentUser = null;
+            // Clear from both storages on logout
+            sessionStorage.removeItem('posCurrentUser');
+            localStorage.removeItem('posCurrentUser');
+            this.showLoginScreen();
+        },
+        // === END: UPDATED LOGIN/LOGOUT LOGIC ===
+
         showLoginScreen() { document.getElementById('login-screen').style.display = 'block'; document.getElementById('main-app').style.display = 'none'; },
         showToast(message, type = 'success') { const toast = document.getElementById('toast-notification'); if (!toast) return; toast.textContent = message; toast.style.backgroundColor = type === 'error' ? 'var(--danger-color)' : (type === 'warning' ? 'var(--warning-color)' : 'var(--success-color)'); toast.className = 'show'; setTimeout(() => { toast.className = toast.className.replace('show', ''); }, 3000); },
         openSummaryModal(htmlContent) { const modal = document.getElementById('summaryModal'); const modalBody = document.getElementById('modalBodyContent'); modalBody.innerHTML = htmlContent; modal.style.display = 'flex'; },
@@ -1605,6 +1673,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         buildPosSummaryHtml(context) {
             const { summaryResult, title, thaiDateString, sellerIdFilter, startDate, endDate } = context;
+            const isSingleDayReport = startDate.toISOString().split('T')[0] === endDate.toISOString().split('T')[0];
             const formatCurrency = (num) => this.formatNumberSmart(num);
             
             const formatSummaryTimestamp = (date) => {
@@ -1631,7 +1700,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p><strong>ยอดเงินโอน:</strong> ${formatCurrency(summaryResult.grandTotalTransfer)} บาท</p>
                     <p><strong>ยอดเครดิต:</strong> ${formatCurrency(summaryResult.grandTotalCredit)} บาท</p>
                     <p><strong>ยอดขายรวมทั้งหมด: ${formatCurrency(summaryResult.grandTotalSales)} บาท</strong></p>
-                    <p><strong>จำนวนวันขายทั้งหมด: ${summaryResult.totalSellingDays} วัน</strong></p>
+                    ${!isSingleDayReport ? `<p><strong>จำนวนวันขายทั้งหมด: ${summaryResult.totalSellingDays} วัน</strong></p>` : ''}
                     <p style="font-weight: bold; font-size: 1.2em; color: ${summaryResult.grandTotalProfit >= 0 ? 'green' : 'red'};">
                         <strong>กำไรสุทธิรวม: ${formatCurrency(summaryResult.grandTotalProfit)} บาท</strong>
                     </p>`;
@@ -1705,7 +1774,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${isSellerReport ? `<p style="font-size:0.8em; color:#555; margin-bottom: 0;">สรุปโดย: ${this.currentUser.username} | สรุปเมื่อ: ${summaryTimestamp}</p>` : ''}
                         <p style="font-size: 0.9em; color: #333; font-weight: bold; margin-bottom: 8px;">${thaiDateString}</p>
                         <p style="margin-bottom: 8px;"><strong>ยอดขายรวม: ${formatCurrency(sellerData.totalSales)} บาท</strong> <br><span style="font-size:0.9em; color:#555;">(เงินสด: ${formatCurrency(sellerData.totalCash)} | เงินโอน: ${formatCurrency(sellerData.totalTransfer)} | เครดิต: ${formatCurrency(sellerData.totalCredit)})</span></p>
-                        <p><strong>จำนวนวันขายทั้งหมด: ${summaryResult.totalSellingDays} วัน</strong></p>
+                        ${!isSingleDayReport ? `<p><strong>จำนวนวันขายทั้งหมด: ${summaryResult.totalSellingDays} วัน</strong></p>` : ''}
                         ${profitOrCommissionHtml}
                         <table class="product-summary-table">
                             <thead><tr><th>สินค้า</th><th>ขายเงินสด</th><th>ขายเงินโอน</th><th>ขายเครดิต</th><th>รวม (หน่วย)</th><th>ยอดขาย (บาท)</th><th>สต็อกคงเหลือ</th></tr></thead>
@@ -1719,7 +1788,8 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         exportPosSummaryToCsv(context) {
-            const { summaryResult, title, thaiDateString, periodName, sellerIdFilter } = context;
+            const { summaryResult, title, thaiDateString, periodName, sellerIdFilter, startDate, endDate } = context;
+            const isSingleDayReport = startDate.toISOString().split('T')[0] === endDate.toISOString().split('T')[0];
             let csvRows = [];
             
             const now = new Date();
@@ -1744,7 +1814,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 csvRows.push(['ยอดเงินโอน (บาท)', this.formatNumberSmart(summaryResult.grandTotalTransfer)]);
                 csvRows.push(['ยอดเครดิต (บาท)', this.formatNumberSmart(summaryResult.grandTotalCredit)]);
                 csvRows.push(['ยอดขายรวมทั้งหมด (บาท)', this.formatNumberSmart(summaryResult.grandTotalSales)]);
-                csvRows.push(['จำนวนวันขายทั้งหมด (วัน)', summaryResult.totalSellingDays]);
+                if (!isSingleDayReport) {
+                    csvRows.push(['จำนวนวันขายทั้งหมด (วัน)', summaryResult.totalSellingDays]);
+                }
                 csvRows.push(['กำไรสุทธิรวม (บาท)', this.formatNumberSmart(summaryResult.grandTotalProfit)]);
                 csvRows.push([]);
             }
@@ -1758,7 +1830,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 csvRows.push(['ยอดเงินสด (บาท)', this.formatNumberSmart(sellerData.totalCash)]);
                 csvRows.push(['ยอดเงินโอน (บาท)', this.formatNumberSmart(sellerData.totalTransfer)]);
                 csvRows.push(['ยอดเครดิต (บาท)', this.formatNumberSmart(sellerData.totalCredit)]);
-                csvRows.push(['จำนวนวันขายทั้งหมด (วัน)', summaryResult.totalSellingDays]);
+                if (!isSingleDayReport) {
+                    csvRows.push(['จำนวนวันขายทั้งหมด (วัน)', summaryResult.totalSellingDays]);
+                }
 
                 if (isSellerReport) {
                     const sellerUser = this.data.users.find(u => u.id == sellerId);
@@ -2942,7 +3016,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (e.target.id === 'generate-stock-report-btn') this.renderStockSummaryReport();
                 if (e.target.id === 'recalculate-stock-btn') this.handleRecalculateStock();
 
-                // Summary buttons
+                 // Summary buttons
                 if (e.target.id === 'summary-today-btn') this.summarizeToday(); 
                 if (e.target.id === 'summary-all-btn') this.summarizeAll(); 
                 if (e.target.id === 'summary-by-day-btn') this.summarizeByDay(); 
@@ -2955,7 +3029,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (e.target.id === 'my-summary-all-credit-btn') this.summarizeMyAllCredit(); 
                 if (e.target.id === 'my-summary-all-transfer-btn') this.summarizeMyAllTransfers();
             }); 
-            mainApp.addEventListener('change', (e) => { 
+		
+	        mainApp.addEventListener('change', (e) => { 
                 if(e.target.name === 'payment-method') this.togglePaymentDetailFields(); 
                 if (e.target.id === 'user-role') { 
                     const productDiv = document.getElementById('user-product-assignment-container'); 
@@ -2998,7 +3073,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
     };
     
-    window.App = App;
+   window.App = App;
     App.init();
 });
 </script>
