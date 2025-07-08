@@ -1329,7 +1329,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td data-label="ผู้ซื้อ">${s.buyerName || '-'}</td>
                     <td data-label="ผู้ขาย">${s.sellerName || '-'}</td>
                     <td data-label="รายการ">${itemsList}</td>
-                    <td data-label="ยอดเงิน (บาท)">${formatCurrency(s.total)}</td>
+                    <td data-label="ยอดเงิน(บาท)">${formatCurrency(s.total)}</td>
                     <td data-label="กำหนดชำระ">${formatDate(s.creditDueDate)}</td>
                 </tr>`;
             });
@@ -1339,13 +1339,13 @@ document.addEventListener('DOMContentLoaded', () => {
             return `
                 <div style="text-align:center;">
                     <h2>สรุปรายการลูกหนี้ทั้งหมดของ: ${sellerName}</h2>
-                    <p style="font-size:0.8em; color:#555; margin-bottom: 0;">สรุปเมื่อ: ${summaryTimestamp}</p>
+                    <p style="font-size:0.8em; color:#555; margin-bottom: 0;">สรุปเมื่อ : ${summaryTimestamp}</p>
                     ${periodLine}
                     <table class="credit-details-table" style="margin-top: 15px;">
-                        <thead><tr><th>วันที่</th><th>ผู้ซื้อ</th><th>ผู้ขาย</th><th>รายการ</th><th>ยอดเงิน (บาท)</th><th>กำหนดชำระ</th></tr></thead>
+                        <thead><tr><th>วันที่</th><th>ผู้ซื้อ</th><th>ผู้ขาย</th><th>รายการ</th><th>ยอดเงิน(บาท)</th><th>กำหนดชำระ</th></tr></thead>
                         <tbody>${creditRows}</tbody>
                     </table>
-                    <p style="text-align:right; font-size:1.2em; font-weight:bold; margin-top:15px;">ยอดรวมลูกหนี้ทั้งหมด: ${formatCurrency(totalCredit)} บาท</p>
+                    <p style="text-align:right; font-size:1.2em; font-weight:bold; margin-top:15px;">ยอดรวมลูกหนี้ทั้งหมด : ${formatCurrency(totalCredit)} บาท</p>
                 </div>
             `;
         },
@@ -1598,7 +1598,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td data-label="ผู้โอน">${s.transferorName || '-'}</td>
                     <td data-label="ผู้ขาย">${s.sellerName || '-'}</td>
                     <td data-label="รายการ">${itemsList}</td>
-                    <td data-label="ยอดเงิน (บาท)">${formatCurrency(s.total)}</td>
+                    <td data-label="ยอดเงิน(บาท)">${formatCurrency(s.total)}</td>
                 </tr>`;
             });
 
@@ -1607,10 +1607,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return `
                 <div style="text-align:center;">
                     <h2>สรุปรายการเงินโอนทั้งหมดของ: ${sellerName}</h2>
-                    <p style="font-size:0.8em; color:#555; margin-bottom: 0;">สรุปเมื่อ: ${summaryTimestamp}</p>
+                    <p style="font-size:0.8em; color:#555; margin-bottom: 0;">สรุปเมื่อ : ${summaryTimestamp}</p>
                     ${periodLine}
                     <table class="transfer-details-table" style="margin-top: 15px;">
-                        <thead><tr><th>วันที่</th><th>ผู้โอน</th><th>ผู้ขาย</th><th>รายการ</th><th>ยอดเงิน (บาท)</th></tr></thead>
+                        <thead><tr><th>วันที่</th><th>ผู้โอน</th><th>ผู้ขาย</th><th>รายการ</th><th>ยอดเงิน(บาท)</th></tr></thead>
                         <tbody>${transferRows}</tbody>
                     </table>
                     <p style="text-align:right; font-size:1.2em; font-weight:bold; margin-top:15px;">ยอดรวมเงินโอนทั้งหมด: ${formatCurrency(totalTransfer)} บาท</p>
@@ -1635,12 +1635,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const formatDate = (dateStr) => this.formatThaiDateShortYear(dateStr);
             const periodString = `${formatDate(startDate)} ถึง ${formatDate(endDate)}`;
 
-            csvRows.push(['สรุปโดย:', this.currentUser.username]);
-            csvRows.push(['สรุปเมื่อ:', summaryDateTime]);
+            csvRows.push(['สรุปโดย :', this.currentUser.username]);
+            csvRows.push(['สรุปเมื่อ :', summaryDateTime]);
             csvRows.push([`สรุปรายการเงินโอนของ ${sellerName}:`, periodString]);
             csvRows.push([]);
 
-            csvRows.push(['วันที่', 'ผู้โอน', 'ผู้ขาย', 'รายการสินค้า', 'ยอดเงิน (บาท)']);
+            csvRows.push(['วันที่', 'ผู้โอน', 'ผู้ขาย', 'รายการสินค้า', 'ยอดเงิน(บาท)']);
             
             let totalTransfer = 0;
             [...filteredTransferSales].sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(s => {
@@ -1772,15 +1772,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 overallSummaryHtml = `
                     <div style="text-align:center;">
                         <h2>${title}</h2>
-                        <p style="font-size:0.8em; color:#555; margin-bottom: 0;">สรุปโดย: ${this.currentUser.username} | สรุปเมื่อ: ${summaryTimestamp}</p>
+                        <p style="font-size:0.8em; color:#555; margin-bottom: 0;">สรุปโดย : ${this.currentUser.username} | สรุปเมื่อ : ${summaryTimestamp}</p>
                         <p style="font-size:0.9em; color:#333; font-weight:bold; margin-bottom: 8px;">วันที่ขายสินค้า : ${dateDisplayString}</p>
                     </div>
                     <hr><h2>ภาพรวมทั้งหมด</h2>
-                    <p><strong>ยอดเงินสด:</strong> ${formatCurrency(summaryResult.grandTotalCash)} บาท</p>
-                    <p><strong>ยอดเงินโอน:</strong> ${formatCurrency(summaryResult.grandTotalTransfer)} บาท</p>
-                    <p><strong>ยอดเครดิต:</strong> ${formatCurrency(summaryResult.grandTotalCredit)} บาท</p>
+                    <p><strong>ยอดเงินสด :</strong> ${formatCurrency(summaryResult.grandTotalCash)} บาท</p>
+                    <p><strong>ยอดเงินโอน :</strong> ${formatCurrency(summaryResult.grandTotalTransfer)} บาท</p>
+                    <p><strong>ยอดเครดิต :</strong> ${formatCurrency(summaryResult.grandTotalCredit)} บาท</p>
                     <p><strong>ยอดขายรวมทั้งหมด: ${formatCurrency(summaryResult.grandTotalSales)} บาท</strong></p>
-                    ${!isSingleDayReport ? `<p><strong>จำนวนวันขายทั้งหมด: ${summaryResult.totalSellingDays} วัน</strong></p>` : ''}
+                    ${!isSingleDayReport ? `<p><strong>จำนวนวันขายทั้งหมด : ${summaryResult.totalSellingDays} วัน</strong></p>` : ''}
                     <p style="font-weight: bold; font-size: 1.2em; color: ${summaryResult.grandTotalProfit >= 0 ? 'green' : 'red'};">
                         <strong>กำไรสุทธิรวม: ${formatCurrency(summaryResult.grandTotalProfit)} บาท</strong>
                     </p>`;
@@ -1843,9 +1843,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     let creditRows = '';
                     creditSalesDetails.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(s => {
                         const itemsList = s.items.map(item => { const product = this.data.products.find(p => p.id === item.productId); const unit = product ? product.unit : 'หน่วย'; return `${item.name}( ${this.formatNumberSmart(item.quantity)} ${unit} )`; }).join(', ');
-                        creditRows += `<tr><td data-label="วันที่">${this.formatThaiDateShortYear(s.date)}</td><td data-label="ผู้ซื้อ">${s.buyerName || '-'}</td><td data-label="รายการ">${itemsList}</td><td data-label="ยอดเงิน (บาท)">${formatCurrency(s.total)}</td><td data-label="กำหนดชำระ">${this.formatThaiDateShortYear(s.creditDueDate)}</td></tr>`;
+                        creditRows += `<tr><td data-label="วันที่">${this.formatThaiDateShortYear(s.date)}</td><td data-label="ผู้ซื้อ">${s.buyerName || '-'}</td><td data-label="รายการ">${itemsList}</td><td data-label="ยอดเงิน(บาท)">${formatCurrency(s.total)}</td><td data-label="กำหนดชำระ">${this.formatThaiDateShortYear(s.creditDueDate)}</td></tr>`;
                     });
-                    creditDetailsHtml = `<div style="margin-top: 15px; text-align:center;"><h2>รายละเอียดลูกหนี้ (เครดิต)</h2><table class="credit-details-table credit-details-sub-table"><thead><tr><th>วันที่</th><th>ผู้ซื้อ</th><th>รายการ</th><th>ยอดเงิน (บาท)</th><th>กำหนดชำระ</th></tr></thead><tbody>${creditRows}</tbody></table></div>`;
+                    creditDetailsHtml = `<div style="margin-top: 15px; text-align:center;"><h2>รายละเอียดลูกหนี้ (เครดิต)</h2><table class="credit-details-table credit-details-sub-table"><thead><tr><th>วันที่</th><th>ผู้ซื้อ</th><th>รายการ</th><th>ยอดเงิน(บาท)</th><th>กำหนดชำระ</th></tr></thead><tbody>${creditRows}</tbody></table></div>`;
                 }
 
                 let transferDetailsHtml = '';
@@ -1854,21 +1854,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     let transferRows = '';
                     transferSalesDetails.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(s => {
                         const itemsList = s.items.map(item => { const product = this.data.products.find(p => p.id === item.productId); const unit = product ? product.unit : 'หน่วย'; return `${item.name}( ${this.formatNumberSmart(item.quantity)} ${unit} )`; }).join(', ');
-                        transferRows += `<tr><td data-label="วันที่">${this.formatThaiDateShortYear(s.date)}</td><td data-label="ผู้โอน">${s.transferorName || '-'}</td><td data-label="รายการ">${itemsList}</td><td data-label="ยอดเงิน (บาท)">${formatCurrency(s.total)}</td></tr>`;
+                        transferRows += `<tr><td data-label="วันที่">${this.formatThaiDateShortYear(s.date)}</td><td data-label="ผู้โอน">${s.transferorName || '-'}</td><td data-label="รายการ">${itemsList}</td><td data-label="ยอดเงิน(บาท)">${formatCurrency(s.total)}</td></tr>`;
                     });
-                    transferDetailsHtml = `<div style="margin-top: 15px; text-align:center;"><h2>รายละเอียดเงินโอน</h2><table class="transfer-details-table transfer-details-sub-table"><thead><tr><th>วันที่</th><th>ผู้โอน</th><th>รายการ</th><th>ยอดเงิน (บาท)</th></tr></thead><tbody>${transferRows}</tbody></table></div>`;
+                    transferDetailsHtml = `<div style="margin-top: 15px; text-align:center;"><h2>รายละเอียดเงินโอน</h2><table class="transfer-details-table transfer-details-sub-table"><thead><tr><th>วันที่</th><th>ผู้โอน</th><th>รายการ</th><th>ยอดเงิน(บาท)</th></tr></thead><tbody>${transferRows}</tbody></table></div>`;
                 }
                 
                 allSellersHtml += `
                     <div style="text-align:center; ${!isSellerReport ? 'margin-top: 20px;' : ''}">
                         <h2>${sectionTitle}</h2>
-                        ${isSellerReport ? `<p style="font-size:0.8em; color:#555; margin-bottom: 0;">สรุปโดย: ${this.currentUser.username} | สรุปเมื่อ: ${summaryTimestamp}</p>` : ''}
+                        ${isSellerReport ? `<p style="font-size:0.8em; color:#555; margin-bottom: 0;">สรุปโดย : ${this.currentUser.username} | สรุปเมื่อ : ${summaryTimestamp}</p>` : ''}
                         <p style="font-size: 0.9em; color: #333; font-weight: bold; margin-bottom: 8px;">วันที่ขายสินค้า : ${dateDisplayString}</p>
-                        <p style="margin-bottom: 8px;"><strong>ยอดขายรวม: ${formatCurrency(sellerData.totalSales)} บาท</strong> <br><span style="font-size:0.9em; color:#555;">(เงินสด: ${formatCurrency(sellerData.totalCash)} | เงินโอน: ${formatCurrency(sellerData.totalTransfer)} | เครดิต: ${formatCurrency(sellerData.totalCredit)})</span></p>
-                        ${!isSingleDayReport ? `<p><strong>จำนวนวันขายทั้งหมด: ${summaryResult.totalSellingDays} วัน</strong></p>` : ''}
+                        <p style="margin-bottom: 8px;"><strong>ยอดขายรวม : ${formatCurrency(sellerData.totalSales)} บาท</strong> <br><span style="font-size:0.9em; color:#555;">(เงินสด : ${formatCurrency(sellerData.totalCash)} | เงินโอน : ${formatCurrency(sellerData.totalTransfer)} | เครดิต : ${formatCurrency(sellerData.totalCredit)})</span></p>
+                        ${!isSingleDayReport ? `<p><strong>จำนวนวันขายทั้งหมด : ${summaryResult.totalSellingDays} วัน</strong></p>` : ''}
                         ${profitOrCommissionHtml}
                         <table class="product-summary-table">
-                            <thead><tr><th>สินค้า</th><th>ขายเงินสด</th><th>ขายเงินโอน</th><th>ขายเครดิต</th><th>รวม (หน่วย)</th><th>ยอดขาย (บาท)</th><th>สต็อกคงเหลือ</th></tr></thead>
+                            <thead><tr><th>สินค้า</th><th>ขายเงินสด</th><th>ขายเงินโอน</th><th>ขายเครดิต</th><th>รวม(หน่วย)</th><th>ยอดขาย(บาท)</th><th>สต็อกคงเหลือ</th></tr></thead>
                             <tbody>${productTableRows}</tbody>
                         </table>
                         ${creditDetailsHtml}
@@ -1894,8 +1894,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const isSellerReport = !!sellerIdFilter;
 
-            csvRows.push(['สรุปโดย:', this.currentUser.username]);
-            csvRows.push(['สรุปเมื่อ:', summaryDateTime]);
+            csvRows.push(['สรุปโดย :', this.currentUser.username]);
+            csvRows.push(['สรุปเมื่อ :', summaryDateTime]);
             const finalTitle = title.replace('ข้อมูล', 'ข้อมูลทั้งหมด');
             csvRows.push([finalTitle + ':', thaiDateString]);
             csvRows.push([]);
@@ -1994,12 +1994,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const formatDate = (dateStr) => this.formatThaiDateShortYear(dateStr);
             const periodString = `${formatDate(startDate)} ถึง ${formatDate(endDate)}`;
 
-            csvRows.push(['สรุปโดย:', this.currentUser.username]);
-            csvRows.push(['สรุปเมื่อ:', summaryDateTime]);
+            csvRows.push(['สรุปโดย :', this.currentUser.username]);
+            csvRows.push(['สรุปเมื่อ :', summaryDateTime]);
             csvRows.push([`สรุปรายการลูกหนี้ของ ${sellerName}:`, periodString]);
             csvRows.push([]);
 
-            csvRows.push(['วันที่', 'ผู้ซื้อ', 'ผู้ขาย', 'รายการสินค้า', 'ยอดเงิน (บาท)', 'กำหนดชำระ']);
+            csvRows.push(['วันที่', 'ผู้ซื้อ', 'ผู้ขาย', 'รายการสินค้า', 'ยอดเงิน(บาท)', 'กำหนดชำระ']);
             
             let totalCredit = 0;
             [...filteredCreditSales].sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(s => {
@@ -3174,7 +3174,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         fillPages(){ 
-            document.getElementById('page-pos').innerHTML = `<h2>ขายสินค้า (Point of Sale)</h2><div class="pos-layout"><div><form id="add-to-cart-form" style="max-width:none;"><label for="pos-date">วันที่ขาย:</label><input type="date" id="pos-date"><label for="pos-time">เวลา:</label><input type="time" id="pos-time"><label for="pos-product">เลือกสินค้า:</label><select id="pos-product" required></select><label for="pos-quantity">จำนวน:</label><input type="number" id="pos-quantity" value="1" min="1" required><div id="special-price-container" style="display: none; grid-column: 1 / -1; grid-template-columns: 150px 1fr; align-items: center; gap: 15px;"><label for="special-price">ราคาขายใหม่:</label><div><input type="number" id="special-price" placeholder="กรอกราคาต่อหน่วย" min="0" step="any"><span id="current-price-info" style="font-size: 0.9em; color: #555; margin-left: 10px;"></span></div></div><div class="form-actions"><button type="submit" class="success">เพิ่มลงตะกร้า</button><button type="button" id="toggle-special-price-btn">ใช้ราคาพิเศษ</button></div></form><h3>รายการในตะกร้า</h3><div class="table-container"><table id="cart-table"><thead><tr><th>สินค้า</th><th>ราคาฯ</th><th>จำนวน</th><th>รวม</th><th>ลบ</th></tr></thead><tbody></tbody></table></div></div><div id="cart-summary"><div id="payment-method-container"><h4>ประเภทการชำระเงิน</h4><div class="payment-options-wrapper"><label><input type="radio" name="payment-method" value="เงินสด" checked> เงินสด</label><label><input type="radio" name="payment-method" value="เงินโอน"> เงินโอน</label><label><input type="radio" name="payment-method" value="เครดิต"> เครดิต</label></div><div id="transfer-fields-container"><div style="margin-top:10px;"><label for="transfer-name" style="text-align:left;font-weight:bold;">ชื่อผู้โอน:</label><input type="text" id="transfer-name"></div></div><div id="credit-fields-container"><div style="margin-top:10px;"><label for="credit-buyer-name" style="text-align:left;font-weight:bold;">ชื่อผู้ซื้อ (เครดิต):</label><input type="text" id="credit-buyer-name"></div><div style="margin-top:10px;"><label for="credit-due-days" style="text-align:left;font-weight:bold;">จำนวนวันเครดิต:</label><input type="number" id="credit-due-days" min="0" placeholder="เช่น 7, 15, 30"></div></div></div><div class="cart-action-row"><span class="cart-total-label">สรุปยอด:</span><div id="cart-total">฿0.00</div><button id="process-sale-btn">ยืนยันการขาย</button></div></div></div>`; 
+            document.getElementById('page-pos').innerHTML = `<h2>ขายสินค้า (Point of Sale)</h2><div class="pos-layout"><div><form id="add-to-cart-form" style="max-width:none;"><label for="pos-date">วันที่ขาย:</label><input type="date" id="pos-date"><label for="pos-time">เวลา:</label><input type="time" id="pos-time"><label for="pos-product">เลือกสินค้า:</label><select id="pos-product" required></select><label for="pos-quantity">จำนวน:</label><input type="number" id="pos-quantity" value="1" min="1" required><div id="special-price-container" style="display: none; grid-column: 1 / -1; grid-template-columns: 150px 1fr; align-items: center; gap: 15px;"><label for="special-price">ราคาขายใหม่:</label><div><input type="number" id="special-price" placeholder="กรอกราคาต่อหน่วย" min="0" step="any"><span id="current-price-info" style="font-size: 0.9em; color: #555; margin-left: 10px;"></span></div></div><div class="form-actions"><button type="submit" class="success">เพิ่มลงตะกร้า</button><button type="button" id="toggle-special-price-btn">ใช้ราคาพิเศษ</button></div></form><h3>รายการในตะกร้า</h3><div class="table-container"><table id="cart-table"><thead><tr><th>สินค้า</th><th>ราคาฯ</th><th>จำนวน</th><th>รวม</th><th>ลบ</th></tr></thead><tbody></tbody></table></div></div><div id="cart-summary"><div id="payment-method-container"><h4>ประเภทการชำระเงิน</h4><div class="payment-options-wrapper"><label><input type="radio" name="payment-method" value="เงินสด" checked> เงินสด</label><label><input type="radio" name="payment-method" value="เงินโอน"> เงินโอน</label><label><input type="radio" name="payment-method" value="เครดิต"> เครดิต</label></div><div id="transfer-fields-container"><div style="margin-top:10px;"><label for="transfer-name" style="text-align:left;font-weight:bold;">ชื่อผู้โอน:</label><input type="text" id="transfer-name"></div></div><div id="credit-fields-container"><div style="margin-top:10px;"><label for="credit-buyer-name" style="text-align:left;font-weight:bold;">ชื่อผู้ซื้อ (เครดิต):</label><input type="text" id="credit-buyer-name"></div><div style="margin-top:10px;"><label for="credit-due-days" style="text-align:left;font-weight:bold;">จำนวนวันเครดิต :</label><input type="number" id="credit-due-days" min="0" placeholder="เช่น 7, 15, 30"></div></div></div><div class="cart-action-row"><span class="cart-total-label">สรุปยอด:</span><div id="cart-total">฿0.00</div><button id="process-sale-btn">ยืนยันการขาย</button></div></div></div>`; 
             document.getElementById('page-products').innerHTML = `<h2>จัดการสินค้า</h2> <p style="text-align:center; margin-top:-15px; margin-bottom:20px;">ในหน้านี้ใช้สำหรับสร้างและแก้ไขรายละเอียดสินค้า (ชื่อ, ราคา, หน่วย) เท่านั้น <br>การเพิ่มสต็อกสินค้าต้องทำผ่านหน้า "นำเข้าสินค้า" เท่านั้น</p><form id="product-form"> <input type="hidden" id="product-id"> <label for="product-name">ชื่อสินค้า:</label> <input type="text" id="product-name" required> <label for="product-cost">ราคาทุน:</label> <input type="number" id="product-cost" min="0" step="0.01" required> <label for="product-price">ราคาขาย:</label> <input type="number" id="product-price" min="0" step="0.01" required> <label for="product-unit">หน่วย:</label> <input type="text" id="product-unit" placeholder="เช่น ชิ้น, กล่อง" required> <div class="form-actions"> <button type="submit" class="success">บันทึกสินค้า</button> <button type="button" id="clear-product-form-btn" style="background-color:#6c757d;">เคลียร์ฟอร์ม</button> </div> </form> <div class="table-container"><table id="product-table"> <thead> <tr><th>ชื่อสินค้า</th><th>ราคาทุน</th><th>ราคาขาย</th><th>สต็อก</th><th>หน่วย</th><th>จัดการ</th></tr> </thead> <tbody></tbody> </table></div>`; 
             document.getElementById('page-stock-in').innerHTML = `<h2>บันทึกการนำเข้าสินค้า</h2> <form id="stock-in-form"> <label for="stock-in-product">เลือกสินค้า:</label> <select id="stock-in-product" required></select> <label for="stock-in-quantity">จำนวน:</label> <input type="number" id="stock-in-quantity" min="1" required> <label for="stock-in-cost">ราคาทุนต่อหน่วย:</label> <input type="number" id="stock-in-cost" min="0" step="0.01" required> <div class="form-actions"> <button type="submit" class="success">บันทึกการนำเข้า</button> </div> </form> <h3>ประวัติการนำเข้าล่าสุด</h3> <div class="table-container"><table id="stock-in-history-table"> <thead> <tr><th>วันที่</th><th>เวลา</th><th>สินค้า</th><th>จำนวน</th><th>ทุนต่อหน่วย</th><th>ยอดรวม</th></tr> </thead> <tbody></tbody> </table></div>`; 
             document.getElementById('page-stock-out').innerHTML = `<h2>ปรับสต็อก (นำออก)</h2> <form id="stock-out-form"> <label for="stock-out-product">เลือกสินค้า:</label> <select id="stock-out-product" required></select> <label for="stock-out-quantity">จำนวนที่นำออก:</label> <input type="number" id="stock-out-quantity" min="1" required> <label for="stock-out-reason">เหตุผล:</label> <input type="text" id="stock-out-reason" placeholder="เช่น หมดอายุ, ชำรุด, นับสต็อก" required> <div class="form-actions"> <button type="submit" class="danger">ยืนยันการนำออก</button> </div> </form> <h3>ประวัติการนำออกล่าสุด</h3> <div class="table-container"><table id="stock-out-history-table"> <thead> <tr><th>วันที่</th><th>เวลา</th><th>สินค้า</th><th>จำนวน</th><th>เหตุผล</th></tr> </thead> <tbody></tbody> </table></div>`;
