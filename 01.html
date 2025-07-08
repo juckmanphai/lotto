@@ -1759,7 +1759,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let dateDisplayString = thaiDateString;
             if (isSingleDayReport) {
                 const fullDate = this.formatThaiDateFullYear(startDate);
-                dateDisplayString = `ยอดขายของวันที่ ${fullDate}`;
+                dateDisplayString = ` ${fullDate}`;
             }
 
             const summaryTimestamp = this.formatThaiTimestamp(new Date());
