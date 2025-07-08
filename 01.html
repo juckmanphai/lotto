@@ -2653,10 +2653,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if(resetProducts) confirmationMessage += "\n- สินค้าทั้งหมด";
             if(resetSellers) confirmationMessage += "\n- ผู้ขายทั้งหมด (ยกเว้น Admin)";
             if(resetStores) confirmationMessage += "\n- ร้านค้าทั้งหมด";
-            confirmationMessage += "\n\nการกระทำนี้ไม่สามารถย้อนกลับได้! พิมพ์ 'CONFIRM' เพื่อยืนยัน:";
+            confirmationMessage += "\n\nการกระทำนี้ไม่สามารถย้อนกลับได้! พิมพ์ '5555' เพื่อยืนยัน:";
             const userConfirmation = prompt(confirmationMessage);
 
-            if (userConfirmation === 'CONFIRM') {
+            if (userConfirmation === '5555') {
                 if (resetSales) { this.data.sales = []; }
                 if (resetStockIns) { this.data.stockIns = []; this.data.stockOuts = []; }
                 if (resetProducts) { this.data.products = []; }
