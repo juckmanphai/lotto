@@ -438,6 +438,15 @@
             border: 2px solid #1e7e34; /* เพิ่มเส้นขอบสีเข้มเล็กน้อย */
         }
         /* === END: USER REQUEST === */
+        
+        /* === START: NEW - Style for backdating inputs === */
+        #pos-date.backdating-active,
+        #pos-time.backdating-active {
+            background-color: #fffbe6; /* สีเหลืองอ่อน */
+            border-color: #f5a623; /* สีส้ม */
+            font-weight: bold;
+        }
+        /* === END: NEW === */
 
 
         /* RESPONSIVE STYLES */
@@ -1040,6 +1049,40 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         },
         
+        formatThaiDateFullYear(dateStr) {
+            if (!dateStr) return '-';
+            try {
+                const date = new Date(dateStr);
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const year = date.getFullYear() + 543;
+                return `${day}/${month}/${year}`;
+            } catch (e) {
+                console.error("Date formatting error:", e);
+                return '-';
+            }
+        },
+
+        formatThaiTimestamp(date) {
+            if (!(date instanceof Date)) {
+                date = new Date(date);
+            }
+            if (isNaN(date)) return '-';
+
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear() + 543;
+            const dateString = `${day}/${month}/${year}`;
+
+            const timeString = date.toLocaleTimeString('th-TH', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            });
+
+            return `วันที่ ${dateString} เวลา ${timeString} น.`;
+        },
+
         toggleSection(sectionId) {
             const currentlyOpen = document.querySelector('.section-content.active');
             if (currentlyOpen && currentlyOpen.id !== sectionId) {
@@ -1149,20 +1192,17 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         saveData() { localStorage.setItem('posData', JSON.stringify(this.data)); },
         
-        // === START: UPDATED LOGIN/LOGOUT LOGIC ===
         checkLoginState() {
-            // Check localStorage first (for 'Remember Me')
             const rememberedUserJson = localStorage.getItem('posCurrentUser');
             if (rememberedUserJson) {
                 const rememberedUser = JSON.parse(rememberedUserJson);
                 this.currentUser = this.data.users.find(u => u.id === rememberedUser.id);
                 if (this.currentUser) {
                     this.showMainApp();
-                    return; // Found user, exit function
+                    return;
                 }
             }
 
-            // If not found in localStorage, check sessionStorage as usual
             const sessionUserJson = sessionStorage.getItem('posCurrentUser');
             if (sessionUserJson) {
                 const sessionUser = JSON.parse(sessionUserJson);
@@ -1182,15 +1222,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.currentUser = user;
                 const rememberMe = document.getElementById('remember-me').checked;
 
-                // Always clear old sessions first
                 sessionStorage.removeItem('posCurrentUser');
                 localStorage.removeItem('posCurrentUser');
 
                 if (rememberMe) {
-                    // If 'Remember Me' is checked, store in localStorage
                     localStorage.setItem('posCurrentUser', JSON.stringify(this.currentUser));
                 } else {
-                    // Otherwise, store in sessionStorage (default behavior)
                     sessionStorage.setItem('posCurrentUser', JSON.stringify(this.currentUser));
                 }
 
@@ -1202,12 +1239,10 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         logout() {
             this.currentUser = null;
-            // Clear from both storages on logout
             sessionStorage.removeItem('posCurrentUser');
             localStorage.removeItem('posCurrentUser');
             this.showLoginScreen();
         },
-        // === END: UPDATED LOGIN/LOGOUT LOGIC ===
 
         showLoginScreen() { document.getElementById('login-screen').style.display = 'block'; document.getElementById('main-app').style.display = 'none'; },
         showToast(message, type = 'success') { const toast = document.getElementById('toast-notification'); if (!toast) return; toast.textContent = message; toast.style.backgroundColor = type === 'error' ? 'var(--danger-color)' : (type === 'warning' ? 'var(--warning-color)' : 'var(--success-color)'); toast.className = 'show'; setTimeout(() => { toast.className = toast.className.replace('show', ''); }, 3000); },
@@ -1281,7 +1316,6 @@ document.addEventListener('DOMContentLoaded', () => {
             
             let totalCredit = 0;
             let creditRows = '';
-            // *** UPDATED: Sort by most recent date first ***
             [...filteredCreditSales].sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(s => {
                 totalCredit += s.total;
                 const itemsList = s.items.map(item => { 
@@ -1348,7 +1382,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             
-            const summaryTimestamp = new Date().toLocaleString('th-TH', { hour12: false });
+            const summaryTimestamp = this.formatThaiTimestamp(new Date());
             const selectedSeller = this.data.users.find(u => u.id == sellerId);
             const sellerName = sellerId === 'all' ? 'ผู้ขายทั้งหมด' : (selectedSeller ? selectedSeller.username : 'ไม่พบผู้ขาย');
 
@@ -1411,7 +1445,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 reportEndDate.setHours(23,59,59,999);
             }
 
-            const summaryTimestamp = new Date().toLocaleString('th-TH', { hour12: false });
+            const summaryTimestamp = this.formatThaiTimestamp(new Date());
             const sellerName = this.currentUser.username;
 
             this.summaryContext = {
@@ -1461,7 +1495,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             
-            const summaryTimestamp = new Date().toLocaleString('th-TH', { hour12: false });
+            const summaryTimestamp = this.formatThaiTimestamp(new Date());
             const selectedSeller = this.data.users.find(u => u.id == sellerId);
             const sellerName = sellerId === 'all' ? 'ผู้ขายทั้งหมด' : (selectedSeller ? selectedSeller.username : 'ไม่พบผู้ขาย');
 
@@ -1524,7 +1558,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 reportEndDate.setHours(23,59,59,999);
             }
 
-            const summaryTimestamp = new Date().toLocaleString('th-TH', { hour12: false });
+            const summaryTimestamp = this.formatThaiTimestamp(new Date());
             const sellerName = this.currentUser.username;
 
             this.summaryContext = {
@@ -1551,7 +1585,6 @@ document.addEventListener('DOMContentLoaded', () => {
             
             let totalTransfer = 0;
             let transferRows = '';
-            // *** UPDATED: Sort by most recent date first ***
             [...filteredTransferSales].sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(s => {
                 totalTransfer += s.total;
                 const itemsList = s.items.map(item => { 
@@ -1596,7 +1629,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const year = now.getFullYear() + 543;
             const hours = String(now.getHours()).padStart(2, '0');
             const minutes = String(now.getMinutes()).padStart(2, '0');
-            const summaryDateTime = `${day}/${month}/${year.toString().slice(-2)} ${hours}:${minutes} น.`;
+            const summaryDateTime = `${day}/${month}/${year} ${hours}:${minutes} น.`;
             
             const formatCurrency = (num) => this.formatNumberSmart(num);
             const formatDate = (dateStr) => this.formatThaiDateShortYear(dateStr);
@@ -1610,7 +1643,6 @@ document.addEventListener('DOMContentLoaded', () => {
             csvRows.push(['วันที่', 'ผู้โอน', 'ผู้ขาย', 'รายการสินค้า', 'ยอดเงิน (บาท)']);
             
             let totalTransfer = 0;
-            // *** UPDATED: Sort by most recent date first for CSV export ***
             [...filteredTransferSales].sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(s => {
                 totalTransfer += s.total;
                 const itemsList = s.items.map(item => { 
@@ -1724,15 +1756,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const isSingleDayReport = startDate.toISOString().split('T')[0] === endDate.toISOString().split('T')[0];
             const formatCurrency = (num) => this.formatNumberSmart(num);
             
-            const formatSummaryTimestamp = (date) => {
-                const datePart = this.formatThaiDateShortYear(date);
-                const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: false };
-                const timePart = date.toLocaleTimeString('th-TH', timeOptions);
-                return `${datePart} เวลา ${timePart} น.`;
-            };
+            let dateDisplayString = thaiDateString;
+            if (isSingleDayReport) {
+                const fullDate = this.formatThaiDateFullYear(startDate);
+                dateDisplayString = `ยอดขายของวันที่ ${fullDate}`;
+            }
+
+            const summaryTimestamp = this.formatThaiTimestamp(new Date());
 
             const isSellerReport = !!sellerIdFilter;
-            const summaryTimestamp = formatSummaryTimestamp(new Date()); 
             let allSellersHtml = '';
             let overallSummaryHtml = '';
             
@@ -1741,7 +1773,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div style="text-align:center;">
                         <h2>${title}</h2>
                         <p style="font-size:0.8em; color:#555; margin-bottom: 0;">สรุปโดย: ${this.currentUser.username} | สรุปเมื่อ: ${summaryTimestamp}</p>
-                        <p style="font-size:0.9em; color:#333; font-weight:bold; margin-bottom: 8px;">${thaiDateString}</p>
+                        <p style="font-size:0.9em; color:#333; font-weight:bold; margin-bottom: 8px;">${dateDisplayString}</p>
                     </div>
                     <hr><h2>ภาพรวมทั้งหมด</h2>
                     <p><strong>ยอดเงินสด:</strong> ${formatCurrency(summaryResult.grandTotalCash)} บาท</p>
@@ -1809,7 +1841,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const creditSalesDetails = this.data.sales.filter(s => s.sellerId == sellerId && s.paymentMethod === 'เครดิต' && new Date(s.date) >= startDate && new Date(s.date) <= endDate);
                 if (creditSalesDetails.length > 0) {
                     let creditRows = '';
-                    // *** UPDATED: Sort by most recent date first ***
                     creditSalesDetails.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(s => {
                         const itemsList = s.items.map(item => { const product = this.data.products.find(p => p.id === item.productId); const unit = product ? product.unit : 'หน่วย'; return `${item.name}( ${this.formatNumberSmart(item.quantity)} ${unit} )`; }).join(', ');
                         creditRows += `<tr><td data-label="วันที่">${this.formatThaiDateShortYear(s.date)}</td><td data-label="ผู้ซื้อ">${s.buyerName || '-'}</td><td data-label="รายการ">${itemsList}</td><td data-label="ยอดเงิน (บาท)">${formatCurrency(s.total)}</td><td data-label="กำหนดชำระ">${this.formatThaiDateShortYear(s.creditDueDate)}</td></tr>`;
@@ -1817,7 +1848,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     creditDetailsHtml = `<div style="margin-top: 15px; text-align:center;"><h2>รายละเอียดลูกหนี้ (เครดิต)</h2><table class="credit-details-table credit-details-sub-table"><thead><tr><th>วันที่</th><th>ผู้ซื้อ</th><th>รายการ</th><th>ยอดเงิน (บาท)</th><th>กำหนดชำระ</th></tr></thead><tbody>${creditRows}</tbody></table></div>`;
                 }
 
-                // START: ADDED TRANSFER DETAILS
                 let transferDetailsHtml = '';
                 const transferSalesDetails = this.data.sales.filter(s => s.sellerId == sellerId && s.paymentMethod === 'เงินโอน' && new Date(s.date) >= startDate && new Date(s.date) <= endDate);
                 if (transferSalesDetails.length > 0) {
@@ -1828,13 +1858,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                     transferDetailsHtml = `<div style="margin-top: 15px; text-align:center;"><h2>รายละเอียดเงินโอน</h2><table class="transfer-details-table transfer-details-sub-table"><thead><tr><th>วันที่</th><th>ผู้โอน</th><th>รายการ</th><th>ยอดเงิน (บาท)</th></tr></thead><tbody>${transferRows}</tbody></table></div>`;
                 }
-                // END: ADDED TRANSFER DETAILS
                 
                 allSellersHtml += `
                     <div style="text-align:center; ${!isSellerReport ? 'margin-top: 20px;' : ''}">
                         <h2>${sectionTitle}</h2>
                         ${isSellerReport ? `<p style="font-size:0.8em; color:#555; margin-bottom: 0;">สรุปโดย: ${this.currentUser.username} | สรุปเมื่อ: ${summaryTimestamp}</p>` : ''}
-                        <p style="font-size: 0.9em; color: #333; font-weight: bold; margin-bottom: 8px;">${thaiDateString}</p>
+                        <p style="font-size: 0.9em; color: #333; font-weight: bold; margin-bottom: 8px;">${dateDisplayString}</p>
                         <p style="margin-bottom: 8px;"><strong>ยอดขายรวม: ${formatCurrency(sellerData.totalSales)} บาท</strong> <br><span style="font-size:0.9em; color:#555;">(เงินสด: ${formatCurrency(sellerData.totalCash)} | เงินโอน: ${formatCurrency(sellerData.totalTransfer)} | เครดิต: ${formatCurrency(sellerData.totalCredit)})</span></p>
                         ${!isSingleDayReport ? `<p><strong>จำนวนวันขายทั้งหมด: ${summaryResult.totalSellingDays} วัน</strong></p>` : ''}
                         ${profitOrCommissionHtml}
@@ -1861,7 +1890,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const year = now.getFullYear() + 543;
             const hours = String(now.getHours()).padStart(2, '0');
             const minutes = String(now.getMinutes()).padStart(2, '0');
-            const summaryDateTime = `${day}/${month}/${year.toString().slice(-2)} ${hours}:${minutes} น.`;
+            const summaryDateTime = `${day}/${month}/${year} ${hours}:${minutes} น.`;
 
             const isSellerReport = !!sellerIdFilter;
 
@@ -1959,7 +1988,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const year = now.getFullYear() + 543;
             const hours = String(now.getHours()).padStart(2, '0');
             const minutes = String(now.getMinutes()).padStart(2, '0');
-            const summaryDateTime = `${day}/${month}/${year.toString().slice(-2)} ${hours}:${minutes} น.`;
+            const summaryDateTime = `${day}/${month}/${year} ${hours}:${minutes} น.`;
             
             const formatCurrency = (num) => this.formatNumberSmart(num);
             const formatDate = (dateStr) => this.formatThaiDateShortYear(dateStr);
@@ -1973,7 +2002,6 @@ document.addEventListener('DOMContentLoaded', () => {
             csvRows.push(['วันที่', 'ผู้ซื้อ', 'ผู้ขาย', 'รายการสินค้า', 'ยอดเงิน (บาท)', 'กำหนดชำระ']);
             
             let totalCredit = 0;
-            // *** UPDATED: Sort by most recent date first for CSV export ***
             [...filteredCreditSales].sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(s => {
                 totalCredit += s.total;
                 const itemsList = s.items.map(item => { 
@@ -2006,9 +2034,6 @@ document.addEventListener('DOMContentLoaded', () => {
             this.showToast(`ส่งออกไฟล์ CSV '${fileName}' สำเร็จ`);
         },
 
-        // ===============================================
-        // START: NEW FUNCTION FOR SALES HISTORY CSV EXPORT
-        // ===============================================
         exportSalesHistoryToCsv() {
             const startDateStr = document.getElementById('export-sales-start-date').value;
             const endDateStr = document.getElementById('export-sales-end-date').value;
@@ -2039,14 +2064,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // Sort by date, most recent first
             filteredSales.sort((a, b) => new Date(b.date) - new Date(a.date));
 
             let csvRows = [];
-            // Add Headers
             csvRows.push(['วันที่', 'เวลา', 'รายการสินค้า', 'ราคาต่อหน่วย', 'จำนวน', 'ราคารวมต่อรายการ', 'ยอดขายรวม (บาท)', 'กำไรรวม (บาท)', 'ประเภทชำระ', 'รายละเอียดชำระ', 'กำหนดชำระ', 'ผู้ขาย', 'ร้านค้า']);
 
-            // Add Data Rows
             filteredSales.forEach(sale => {
                 const saleDate = new Date(sale.date);
                 const dateString = this.formatThaiDateShortYear(sale.date);
@@ -2060,7 +2082,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 const dueDateString = this.formatThaiDateShortYear(sale.creditDueDate);
 
-                // For sales with multiple items, we list the main info only on the first line
                 sale.items.forEach((item, index) => {
                     const itemTotal = item.price * item.quantity;
                     const row = [
@@ -2093,10 +2114,6 @@ document.addEventListener('DOMContentLoaded', () => {
             URL.revokeObjectURL(link.href);
             this.showToast(`ส่งออกไฟล์ CSV '${fileName}' สำเร็จ`);
         },
-        // ===============================================
-        // END: NEW FUNCTION
-        // ===============================================
-
 
         renderPos(payload = null) {
             this.editingSaleContext = null;
@@ -2124,7 +2141,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 productSelect.classList.remove('single-product-seller');
             }
             
-            if (payload) {
+            if (payload) { // For editing a sale
                 this.editingSaleContext = { sellerId: payload.sellerId, sellerName: payload.sellerName };
                 this.cart = [];
                 payload.items.forEach(item => {
@@ -2158,9 +2175,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const d = new Date(payload.date);
                 document.getElementById('pos-time').value = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
             } else {
-                document.getElementById('pos-date').value = '';
-                document.getElementById('pos-time').value = '';
-                document.querySelector('input[name="payment-method"][value="เงินสด"]').checked = true;
+                if (this.cart.length === 0) {
+                    document.getElementById('pos-date').value = '';
+                    document.getElementById('pos-time').value = '';
+                    document.querySelector('input[name="payment-method"][value="เงินสด"]').checked = true;
+                    document.getElementById('pos-date').classList.remove('backdating-active');
+                    document.getElementById('pos-time').classList.remove('backdating-active');
+                }
             }
             this.renderCart();
             this.togglePaymentDetailFields();
@@ -2168,7 +2189,59 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         renderCart() { const tbody = document.querySelector('#cart-table tbody'); if (!tbody) return; tbody.innerHTML = ''; let total = 0; this.cart.forEach((item, index) => { const tr = document.createElement('tr'); const itemTotal = item.sellingPrice * item.quantity; total += itemTotal; let itemName = item.name; if (item.isSpecialPrice) { itemName += ` <span style="font-weight:bold;">(พิเศษ)</span>`; } tr.innerHTML = `<td data-label="สินค้า">${itemName}</td><td data-label="ราคาฯ">${this.formatNumberSmart(item.sellingPrice)}</td><td data-label="จำนวน">${this.formatNumberSmart(item.quantity)}</td><td data-label="รวม">${this.formatNumberSmart(itemTotal)}</td><td data-label="ลบ"><div class="action-buttons"><button class="danger remove-from-cart-btn" data-index="${index}">ลบ</button></div></td>`; tbody.appendChild(tr); }); document.getElementById('cart-total').textContent = `฿${this.formatNumberSmart(total)}`; },
-        addToCart(e) { e.preventDefault(); const productId = document.getElementById('pos-product').value; if (!productId) { this.showToast('กรุณาเลือกสินค้า'); return; } const quantity = parseInt(document.getElementById('pos-quantity').value); const product = this.data.products.find(p => p.id == productId); if (quantity > product.stock) { this.showToast('สินค้าในสต็อกไม่เพียงพอ'); return; } const specialPriceInput = document.getElementById('special-price'); let sellingPrice = product.sellingPrice; let isSpecialPrice = false; if (specialPriceInput.parentElement.style.display !== 'none' && specialPriceInput.value.trim() !== '') { const newPrice = parseFloat(specialPriceInput.value); if (!isNaN(newPrice) && newPrice >= 0) { sellingPrice = newPrice; isSpecialPrice = true; } } const existingCartItem = this.cart.find(item => item.id === product.id && item.sellingPrice === sellingPrice); if (existingCartItem) { existingCartItem.quantity += quantity; } else { this.cart.push({ id: product.id, name: product.name, quantity: quantity, sellingPrice: sellingPrice, costPrice: product.costPrice, isSpecialPrice: isSpecialPrice, originalPrice: product.sellingPrice }); } this.renderCart(); document.getElementById('add-to-cart-form').reset(); document.getElementById('pos-quantity').value = 1; this.updateSpecialPriceInfo(); },
+        
+        // ===============================================
+        // START: REVISED addToCart FUNCTION (THE FIX)
+        // ===============================================
+        addToCart(e) { 
+            e.preventDefault(); 
+            const productId = document.getElementById('pos-product').value; 
+            if (!productId) { 
+                this.showToast('กรุณาเลือกสินค้า'); 
+                return; 
+            } 
+            const quantity = parseInt(document.getElementById('pos-quantity').value); 
+            const product = this.data.products.find(p => p.id == productId); 
+            if (quantity > product.stock) { 
+                this.showToast('สินค้าในสต็อกไม่เพียงพอ'); 
+                return; 
+            } 
+            const specialPriceInput = document.getElementById('special-price'); 
+            let sellingPrice = product.sellingPrice; 
+            let isSpecialPrice = false; 
+            if (specialPriceInput.parentElement.style.display !== 'none' && specialPriceInput.value.trim() !== '') { 
+                const newPrice = parseFloat(specialPriceInput.value); 
+                if (!isNaN(newPrice) && newPrice >= 0) { 
+                    sellingPrice = newPrice; 
+                    isSpecialPrice = true; 
+                } 
+            } 
+            const existingCartItem = this.cart.find(item => item.id === product.id && item.sellingPrice === sellingPrice); 
+            if (existingCartItem) { 
+                existingCartItem.quantity += quantity; 
+            } else { 
+                this.cart.push({ id: product.id, name: product.name, quantity: quantity, sellingPrice: sellingPrice, costPrice: product.costPrice, isSpecialPrice: isSpecialPrice, originalPrice: product.sellingPrice }); 
+            } 
+            this.renderCart(); 
+            
+            // --- THIS IS THE FIX ---
+            const productSelect = document.getElementById('pos-product');
+            // เฉพาะเมื่อช่องเลือกสินค้าไม่ได้ถูกปิดใช้งาน (สำหรับผู้ขายที่มีหลายสินค้า)
+            // ถึงจะรีเซ็ตค่าให้เป็นค่าเริ่มต้น
+            if (!productSelect.disabled) {
+                productSelect.value = '';
+            }
+            
+            document.getElementById('pos-quantity').value = 1;
+            document.getElementById('special-price').value = '';
+            // --- END OF FIX ---
+
+            this.updateSpecialPriceInfo(); 
+        },
+        // ===============================================
+        // END: REVISED addToCart FUNCTION
+        // ===============================================
+
         removeFromCart(index) { this.cart.splice(index, 1); this.renderCart(); },
         
         processSale() {
@@ -2208,6 +2281,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 let saleDate = new Date();
                 const dateInput = document.getElementById('pos-date').value;
                 const timeInput = document.getElementById('pos-time').value;
+                const isBackdatedSale = dateInput || timeInput;
+
                 if (dateInput) {
                     const [year, month, day] = dateInput.split('-');
                     saleDate.setFullYear(parseInt(year), parseInt(month) - 1, parseInt(day));
@@ -2263,7 +2338,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.saveData();
                 this.cart = [];
                 this.editingSaleContext = null;
-                this.renderPos();
+                
+                if (isBackdatedSale) {
+                    this.renderCart(); 
+                    document.getElementById('pos-product').value = '';
+                    document.getElementById('pos-quantity').value = 1;
+                    document.getElementById('special-price').value = '';
+                    this.updateSpecialPriceInfo();
+                } else {
+                    this.renderPos(); 
+                }
+
                 this.showToast('✓ บันทึกการขายสำเร็จ!');
             } catch(e) {
                 this.showToast(e.message, 'error');
@@ -2300,24 +2385,18 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         },
         
+        // ===============================================
+        // START: REVISED renderSellerSalesHistory FUNCTION
+        // ===============================================
         renderSellerSalesHistory() {
             const tbody = document.querySelector('#seller-sales-history-table tbody');
             if (!tbody || this.currentUser.role !== 'seller') return;
 
-            const todayEnd = new Date();
-            todayEnd.setHours(23, 59, 59, 999);
-            
-            const yesterdayStart = new Date();
-            yesterdayStart.setDate(yesterdayStart.getDate() - 1);
-            yesterdayStart.setHours(0, 0, 0, 0);
-
-            const mySales = this.data.sales.filter(sale => {
-                if (sale.sellerId !== this.currentUser.id) return false;
-                const saleDate = new Date(sale.date);
-                return saleDate >= yesterdayStart && saleDate <= todayEnd;
-            });
+            // Get all sales for the current user, no date filtering
+            const mySales = this.data.sales.filter(sale => sale.sellerId === this.currentUser.id);
 
             tbody.innerHTML = '';
+            // Sort by most recent first
             mySales.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(sale => {
                 const tr = document.createElement('tr');
                 const saleDate = new Date(sale.date);
@@ -2353,6 +2432,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 tbody.appendChild(tr);
             });
         },
+        // ===============================================
+        // END: REVISED renderSellerSalesHistory FUNCTION
+        // ===============================================
 
         editSale(saleId) { const confirmation = confirm("การแก้ไขจะทำการ **ยกเลิก** รายการขายเดิม และนำสินค้าทั้งหมดกลับเข้าตะกร้าเพื่อให้คุณทำรายการใหม่\n\nคุณต้องการดำเนินการต่อหรือไม่?"); if (!confirmation) return; const saleToEdit = this.deleteSale(saleId, true); if (!saleToEdit) return; this.showToast('รายการถูกนำกลับเข้าตะกร้าแล้ว กรุณาแก้ไขและยืนยันการขายอีกครั้ง'); this.showPage('page-pos', saleToEdit); },
         deleteSale(saleId, isEditing = false) { 
@@ -2481,37 +2563,16 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         
         mergeData(dataFromFile) {
-            // =========================================================
-            // START OF CHANGES: แก้ไขการรวมข้อมูลผู้ใช้ (Users)
-            // =========================================================
             if (dataFromFile.users && Array.isArray(dataFromFile.users)) {
-                // ค้นหา admin ในข้อมูลปัจจุบัน
                 const currentAdmin = this.data.users.find(u => u.username === 'admin');
-                
-                // ค้นหา admin ในข้อมูลจากไฟล์ที่นำเข้า
                 const importedAdmin = dataFromFile.users.find(u => u.username === 'admin');
-
-                // 1. อัปเดตข้อมูล Admin (กรณีพิเศษ)
-                // ถ้าเจอ admin ทั้งในระบบปัจจุบันและในไฟล์, ให้อัปเดตข้อมูลของ admin ปัจจุบัน
-                // โดยใช้ข้อมูลจากไฟล์ (เช่น อัปเดตรหัสผ่าน) เพื่อให้มี admin เพียงคนเดียว
                 if (currentAdmin && importedAdmin) {
                     currentAdmin.password = importedAdmin.password;
-                    // หากมี field อื่นๆ ของ admin ก็สามารถอัปเดตตรงนี้ได้
                 }
-
-                // 2. รวมข้อมูลผู้ขาย (Sellers)
-                // กรองเอาเฉพาะผู้ใช้ที่ไม่ใช่ admin (คือ sellers) จากไฟล์ที่นำเข้ามา
                 const importedSellers = dataFromFile.users.filter(u => u.role !== 'admin');
-                
-                // ใช้ฟังก์ชัน _mergeSingleArray ที่ทำงานได้ดีอยู่แล้ว เพื่อรวมข้อมูล sellers
-                // โดยจะใช้ id ในการตรวจสอบความซ้ำซ้อน ซึ่งถูกต้องสำหรับ sellers
                 this._mergeSingleArray(this.data.users, importedSellers, 'id');
             }
-            // =========================================================
-            // END OF CHANGES
-            // =========================================================
 
-            // ส่วนที่เหลือยังทำงานเหมือนเดิม เพราะไม่มีปัญหา
             this._mergeSingleArray(this.data.stores, dataFromFile.stores, 'id');
             this._mergeSingleArray(this.data.sales, dataFromFile.sales, 'id');
             this._mergeSingleArray(this.data.stockIns, dataFromFile.stockIns, 'id');
@@ -3117,7 +3178,6 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('page-products').innerHTML = `<h2>จัดการสินค้า</h2> <p style="text-align:center; margin-top:-15px; margin-bottom:20px;">ในหน้านี้ใช้สำหรับสร้างและแก้ไขรายละเอียดสินค้า (ชื่อ, ราคา, หน่วย) เท่านั้น <br>การเพิ่มสต็อกสินค้าต้องทำผ่านหน้า "นำเข้าสินค้า" เท่านั้น</p><form id="product-form"> <input type="hidden" id="product-id"> <label for="product-name">ชื่อสินค้า:</label> <input type="text" id="product-name" required> <label for="product-cost">ราคาทุน:</label> <input type="number" id="product-cost" min="0" step="0.01" required> <label for="product-price">ราคาขาย:</label> <input type="number" id="product-price" min="0" step="0.01" required> <label for="product-unit">หน่วย:</label> <input type="text" id="product-unit" placeholder="เช่น ชิ้น, กล่อง" required> <div class="form-actions"> <button type="submit" class="success">บันทึกสินค้า</button> <button type="button" id="clear-product-form-btn" style="background-color:#6c757d;">เคลียร์ฟอร์ม</button> </div> </form> <div class="table-container"><table id="product-table"> <thead> <tr><th>ชื่อสินค้า</th><th>ราคาทุน</th><th>ราคาขาย</th><th>สต็อก</th><th>หน่วย</th><th>จัดการ</th></tr> </thead> <tbody></tbody> </table></div>`; 
             document.getElementById('page-stock-in').innerHTML = `<h2>บันทึกการนำเข้าสินค้า</h2> <form id="stock-in-form"> <label for="stock-in-product">เลือกสินค้า:</label> <select id="stock-in-product" required></select> <label for="stock-in-quantity">จำนวน:</label> <input type="number" id="stock-in-quantity" min="1" required> <label for="stock-in-cost">ราคาทุนต่อหน่วย:</label> <input type="number" id="stock-in-cost" min="0" step="0.01" required> <div class="form-actions"> <button type="submit" class="success">บันทึกการนำเข้า</button> </div> </form> <h3>ประวัติการนำเข้าล่าสุด</h3> <div class="table-container"><table id="stock-in-history-table"> <thead> <tr><th>วันที่</th><th>เวลา</th><th>สินค้า</th><th>จำนวน</th><th>ทุนต่อหน่วย</th><th>ยอดรวม</th></tr> </thead> <tbody></tbody> </table></div>`; 
             document.getElementById('page-stock-out').innerHTML = `<h2>ปรับสต็อก (นำออก)</h2> <form id="stock-out-form"> <label for="stock-out-product">เลือกสินค้า:</label> <select id="stock-out-product" required></select> <label for="stock-out-quantity">จำนวนที่นำออก:</label> <input type="number" id="stock-out-quantity" min="1" required> <label for="stock-out-reason">เหตุผล:</label> <input type="text" id="stock-out-reason" placeholder="เช่น หมดอายุ, ชำรุด, นับสต็อก" required> <div class="form-actions"> <button type="submit" class="danger">ยืนยันการนำออก</button> </div> </form> <h3>ประวัติการนำออกล่าสุด</h3> <div class="table-container"><table id="stock-out-history-table"> <thead> <tr><th>วันที่</th><th>เวลา</th><th>สินค้า</th><th>จำนวน</th><th>เหตุผล</th></tr> </thead> <tbody></tbody> </table></div>`;
-            // === START: UPDATED SALES HISTORY PAGE HTML ===
             document.getElementById('page-sales-history').innerHTML = `
                 <h2>รายการขายย้อนหลัง</h2>
                 <div id="sales-history-export-form">
@@ -3135,7 +3195,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         <tbody></tbody>
                     </table>
                 </div>`;
-            // === END: UPDATED SALES HISTORY PAGE HTML ===
             document.getElementById('page-reports').innerHTML = `<h2>รายงานกำไร/ขาดทุน</h2> <form id="report-filter-form"> <label>ตั้งแต่วันที่:<input type="date" id="report-start-date"></label> <label>ถึงวันที่:<input type="date" id="report-end-date"></label> <label>คนขาย:<select id="report-seller"><option value="all">ทั้งหมด</option></select></label> <button type="submit" id="report-generate-btn">สร้างรายงาน</button> </form> <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 20px; text-align: center;"> <div style="background: #f9f9f9; border: 1px solid var(--border-color); padding: 15px; border-radius: 5px;"> <h3>ยอดขายรวม</h3><p id="report-total-sales" style="font-size: 1.5em; font-weight: bold;">฿0.00</p> </div> <div style="background: #f9f9f9; border: 1px solid var(--border-color); padding: 15px; border-radius: 5px;"> <h3>ต้นทุนรวม</h3><p id="report-total-cost" style="font-size: 1.5em; font-weight: bold;">฿0.00</p> </div> <div style="background: #f9f9f9; border: 1px solid var(--border-color); padding: 15px; border-radius: 5px;"> <h3>กำไรสุทธิ</h3><p id="report-net-profit" style="font-size: 1.5em; font-weight: bold; color: var(--success-color);">฿0.00</p> </div> </div>`; 
             document.getElementById('page-summary').innerHTML = `<h2>สรุปข้อมูลการขายแบบละเอียด</h2><div class="summary-section"> <h3>สรุปด่วน</h3> <div class="summary-form-inline"> <button type="button" id="summary-today-btn" style="background-color: var(--warning-color);">สรุปวันนี้</button> <button type="button" id="summary-all-btn" style="background-color: #673ab7;">สรุปทั้งหมด</button> </div> </div> <div class="summary-section"> <h3>สรุปวันที่เลือก</h3> <div class="summary-form-inline"> <label>เลือกวันที่: <input type="date" id="summary-single-date"></label> <button type="button" id="summary-by-day-btn" style="background-color: #03a9f4;">สรุปวันที่เลือก</button> </div> </div> <div class="summary-section"> <h3>สรุปวันที่ถึงวันที่</h3> <div class="summary-form-inline"> <label>จากวันที่: <input type="date" id="summary-range-start"></label> <label>ถึงวันที่: <input type="date" id="summary-range-end"></label> <button type="button" id="summary-range-btn" style="background-color: #009688;">สรุปตามช่วงวัน</button> </div> </div><div class="summary-section"> <h3>สรุปลูกหนี้ทั้งหมด (เครดิต)</h3> <div class="summary-form-inline"> <label>ผู้ขาย: <select id="summary-credit-seller"></select></label> <label>จากวันที่: <input type="date" id="summary-credit-start-date"></label> <label>ถึงวันที่: <input type="date" id="summary-credit-end-date"></label> <button type="button" id="summary-credit-btn" class="danger">สรุปข้อมูลลูกหนี้</button> </div> </div><div class="summary-section"> <h3>สรุปเงินโอนทั้งหมด</h3> <div class="summary-form-inline"> <label>ผู้ขาย: <select id="summary-transfer-seller"></select></label> <label>จากวันที่: <input type="date" id="summary-transfer-start-date"></label> <label>ถึงวันที่: <input type="date" id="summary-transfer-end-date"></label> <button type="button" id="summary-transfer-btn" style="background-color: #007bff;">สรุปข้อมูลเงินโอน</button> </div> </div>`; 
             document.getElementById('page-stores').innerHTML = `<h2>จัดการร้านค้า</h2> <form id="store-form"> <input type="hidden" id="store-id"> <label for="store-name">ชื่อร้านค้า:</label> <input type="text" id="store-name" required> <div class="form-actions"> <button type="submit" class="success">บันทึกร้านค้า</button> <button type="button" id="clear-store-form-btn" style="background-color:#6c757d;">เคลียร์ฟอร์ม</button> </div> </form> <div class="table-container"><table id="store-table"> <thead> <tr><th>ชื่อร้านค้า</th><th>จัดการ</th></tr> </thead> <tbody></tbody> </table></div>`;
@@ -3148,7 +3207,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div id="seller-backup-content" class="collapsible-content seller-only"><div style="text-align:center; padding-top: 10px;"><p style="margin-top:0;">สำรองข้อมูลทั้งหมด (ผู้ใช้, สินค้า, ประวัติการขาย) ลงในไฟล์ JSON เพื่อเก็บไว้หรือย้ายไปยังเครื่องอื่น</p><button id="save-to-file-btn-seller" class="success">บันทึกข้อมูลทั้งหมดลงไฟล์</button><button id="save-to-browser-btn-seller" style="background-color: #007bff;">บันทึกข้อมูลปัจจุบันลงในเบราว์เซอร์</button></div></div>
             <div class="collapsible-bar seller-only" data-target="seller-summary-content"><span>รายงานสรุป (สำหรับผู้ใช้ปัจจุบัน)</span><span class="arrow">▶</span></div>
             <div id="seller-summary-content" class="collapsible-content seller-only"><div style="text-align:center;"><div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;"><button id="my-summary-today-btn" style="background-color: var(--warning-color);">สรุปยอดขายวันนี้</button><button id="my-summary-all-btn" style="background-color: #673ab7;">สรุปทั้งหมดของฉัน</button><button id="my-summary-all-credit-btn" class="danger">สรุปลูกหนี้ทั้งหมด</button><button id="my-summary-all-transfer-btn" style="background-color: #007bff;">สรุปเงินโอนทั้งหมด</button></div><div class="summary-form-inline" style="margin-top: 15px; justify-content: center; flex-direction: column; gap:10px; align-items: stretch;"><label>เลือกวันที่: <input type="date" id="my-summary-date" style="width:100%;"></label><button id="my-summary-by-day-btn" style="background-color: #03a9f4;">สรุปยอดขายวันที่เลือก</button></div></div></div>
-            <div class="collapsible-bar seller-only" data-target="seller-recent-sales-content"><span>รายการขาย 2 วันล่าสุด</span><span class="arrow">▶</span></div>
+            <div class="collapsible-bar seller-only" data-target="seller-recent-sales-content"><span>รายการขายทั้งหมด</span><span class="arrow">▶</span></div>
             <div id="seller-recent-sales-content" class="collapsible-content seller-only"><div class="table-container" style="margin-top:0;"><table id="seller-sales-history-table"><thead><tr><th>วันที่</th><th>เวลา</th><th>รายการสินค้า</th><th>ยอดขาย</th><th>ประเภทชำระ</th><th>จัดการ</th></tr></thead><tbody></tbody></table></div></div>
             <div class="collapsible-bar admin-only" data-target="admin-stock-report-content" style="background-color: #00B050;"><span>รายงานสต็อกสินค้า</span><span class="arrow">▶</span></div>
             <div id="admin-stock-report-content" class="collapsible-content admin-only">
@@ -3198,11 +3257,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (e.target.classList.contains('edit-user-btn')) this.editUser(e.target.dataset.id); 
                 if (e.target.classList.contains('delete-user-btn')) this.deleteUser(e.target.dataset.id); 
                 
-                // === START: NEW EVENT LISTENER FOR SALES HISTORY EXPORT ===
                 if (e.target.id === 'export-sales-history-csv-btn') {
                     this.exportSalesHistoryToCsv();
                 }
-                // === END: NEW EVENT LISTENER ===
 
                 const collapsibleBar = e.target.closest('.collapsible-bar');
                 if (collapsibleBar) {
@@ -3214,14 +3271,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
                 
-                // Admin and Seller backup buttons
                 if (e.target.id === 'load-from-file-btn') document.getElementById('data-file-input').click(); 
                 if (e.target.id === 'save-to-file-btn' || e.target.id === 'save-to-file-btn-seller') this.saveBackupToFile(); 
                 if (e.target.id === 'save-to-browser-btn' || e.target.id === 'save-to-browser-btn-seller') this.manualSaveToBrowser(); 
                 
                 if (e.target.id === 'open-reset-modal-btn') this.openResetModal();
 
-                // Stock Report Buttons
                 if (e.target.id === 'generate-stock-report-btn') this.renderStockSummaryReport();
                 if (e.target.id === 'recalculate-stock-btn') this.handleRecalculateStock();
 
@@ -3275,6 +3330,18 @@ document.addEventListener('DOMContentLoaded', () => {
                         document.getElementById('reset-stockins-checkbox').checked = true;
                     }
                 }
+                
+                if (e.target.id === 'pos-date' || e.target.id === 'pos-time') {
+                    const dateInput = document.getElementById('pos-date');
+                    const timeInput = document.getElementById('pos-time');
+                    if(dateInput.value || timeInput.value) {
+                        dateInput.classList.add('backdating-active');
+                        timeInput.classList.add('backdating-active');
+                    } else {
+                        dateInput.classList.remove('backdating-active');
+                        timeInput.classList.remove('backdating-active');
+                    }
+                }
             }); 
             
             document.getElementById('cancel-reset-btn').addEventListener('click', () => this.closeResetModal());
@@ -3288,3 +3355,4 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
+
