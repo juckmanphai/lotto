@@ -1334,7 +1334,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </tr>`;
             });
 
-            const periodLine = `<p style="font-size:0.9em; color: #333; font-weight: bold; margin-bottom: 8px;">ช่วงเวลา: ${formatDate(startDate)} ถึง ${formatDate(endDate)}</p>`;
+            const periodLine = `<p style="font-size:0.9em; color: #333; font-weight: bold; margin-bottom: 8px;">ช่วงวันที่ : ${formatDate(startDate)} ถึงวันที่ ${formatDate(endDate)}</p>`;
             
             return `
                 <div style="text-align:center;">
@@ -1602,7 +1602,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </tr>`;
             });
 
-            const periodLine = `<p style="font-size:0.9em; color: #333; font-weight: bold; margin-bottom: 8px;">ช่วงเวลา: ${formatDate(startDate)} ถึง ${formatDate(endDate)}</p>`;
+            const periodLine = `<p style="font-size:0.9em; color: #333; font-weight: bold; margin-bottom: 8px;">ช่วงวันที่ : ${formatDate(startDate)} ถึงวันที่ ${formatDate(endDate)}</p>`;
             
             return `
                 <div style="text-align:center;">
@@ -1773,7 +1773,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div style="text-align:center;">
                         <h2>${title}</h2>
                         <p style="font-size:0.8em; color:#555; margin-bottom: 0;">สรุปโดย: ${this.currentUser.username} | สรุปเมื่อ: ${summaryTimestamp}</p>
-                        <p style="font-size:0.9em; color:#333; font-weight:bold; margin-bottom: 8px;">${dateDisplayString}</p>
+                        <p style="font-size:0.9em; color:#333; font-weight:bold; margin-bottom: 8px;">วันที่ขายสินค้า : ${dateDisplayString}</p>
                     </div>
                     <hr><h2>ภาพรวมทั้งหมด</h2>
                     <p><strong>ยอดเงินสด:</strong> ${formatCurrency(summaryResult.grandTotalCash)} บาท</p>
@@ -1863,7 +1863,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div style="text-align:center; ${!isSellerReport ? 'margin-top: 20px;' : ''}">
                         <h2>${sectionTitle}</h2>
                         ${isSellerReport ? `<p style="font-size:0.8em; color:#555; margin-bottom: 0;">สรุปโดย: ${this.currentUser.username} | สรุปเมื่อ: ${summaryTimestamp}</p>` : ''}
-                        <p style="font-size: 0.9em; color: #333; font-weight: bold; margin-bottom: 8px;">${dateDisplayString}</p>
+                        <p style="font-size: 0.9em; color: #333; font-weight: bold; margin-bottom: 8px;">วันที่ขายสินค้า : ${dateDisplayString}</p>
                         <p style="margin-bottom: 8px;"><strong>ยอดขายรวม: ${formatCurrency(sellerData.totalSales)} บาท</strong> <br><span style="font-size:0.9em; color:#555;">(เงินสด: ${formatCurrency(sellerData.totalCash)} | เงินโอน: ${formatCurrency(sellerData.totalTransfer)} | เครดิต: ${formatCurrency(sellerData.totalCredit)})</span></p>
                         ${!isSingleDayReport ? `<p><strong>จำนวนวันขายทั้งหมด: ${summaryResult.totalSellingDays} วัน</strong></p>` : ''}
                         ${profitOrCommissionHtml}
@@ -3355,4 +3355,3 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
-
