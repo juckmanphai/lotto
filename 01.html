@@ -1125,7 +1125,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     case 'page-users': this.renderUserTable(); break;
                     case 'page-data':
                         if (this.currentUser.role === 'seller') {
-                            this.renderSellerSalesHistory();
+                            this.renderSellerSalesHistoryWithFilter();
                         }
                         break;
                 }
@@ -1183,6 +1183,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (typeof u.commissionOnCash === 'undefined') { u.commissionOnCash = false; }
                         if (typeof u.commissionOnTransfer === 'undefined') { u.commissionOnTransfer = false; }
                         if (typeof u.commissionOnCredit === 'undefined') { u.commissionOnCredit = false; }
+                        // NEW: Add visibleSalesDays for backward compatibility
+                        if (typeof u.visibleSalesDays === 'undefined') { u.visibleSalesDays = null; }
                     } 
                 }); 
             } else { 
@@ -2190,9 +2192,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         renderCart() { const tbody = document.querySelector('#cart-table tbody'); if (!tbody) return; tbody.innerHTML = ''; let total = 0; this.cart.forEach((item, index) => { const tr = document.createElement('tr'); const itemTotal = item.sellingPrice * item.quantity; total += itemTotal; let itemName = item.name; if (item.isSpecialPrice) { itemName += ` <span style="font-weight:bold;">(พิเศษ)</span>`; } tr.innerHTML = `<td data-label="สินค้า">${itemName}</td><td data-label="ราคาฯ">${this.formatNumberSmart(item.sellingPrice)}</td><td data-label="จำนวน">${this.formatNumberSmart(item.quantity)}</td><td data-label="รวม">${this.formatNumberSmart(itemTotal)}</td><td data-label="ลบ"><div class="action-buttons"><button class="danger remove-from-cart-btn" data-index="${index}">ลบ</button></div></td>`; tbody.appendChild(tr); }); document.getElementById('cart-total').textContent = `฿${this.formatNumberSmart(total)}`; },
         
-        // ===============================================
-        // START: REVISED addToCart FUNCTION (THE FIX)
-        // ===============================================
         addToCart(e) { 
             e.preventDefault(); 
             const productId = document.getElementById('pos-product').value; 
@@ -2223,24 +2222,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.cart.push({ id: product.id, name: product.name, quantity: quantity, sellingPrice: sellingPrice, costPrice: product.costPrice, isSpecialPrice: isSpecialPrice, originalPrice: product.sellingPrice }); 
             } 
             this.renderCart(); 
-            
-            // --- THIS IS THE FIX ---
             const productSelect = document.getElementById('pos-product');
-            // เฉพาะเมื่อช่องเลือกสินค้าไม่ได้ถูกปิดใช้งาน (สำหรับผู้ขายที่มีหลายสินค้า)
-            // ถึงจะรีเซ็ตค่าให้เป็นค่าเริ่มต้น
             if (!productSelect.disabled) {
                 productSelect.value = '';
             }
-            
             document.getElementById('pos-quantity').value = 1;
             document.getElementById('special-price').value = '';
-            // --- END OF FIX ---
-
             this.updateSpecialPriceInfo(); 
         },
-        // ===============================================
-        // END: REVISED addToCart FUNCTION
-        // ===============================================
 
         removeFromCart(index) { this.cart.splice(index, 1); this.renderCart(); },
         
@@ -2385,56 +2374,100 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         },
         
-        // ===============================================
-        // START: REVISED renderSellerSalesHistory FUNCTION
-        // ===============================================
-        renderSellerSalesHistory() {
+        renderSellerSalesHistoryWithFilter() {
             const tbody = document.querySelector('#seller-sales-history-table tbody');
             if (!tbody || this.currentUser.role !== 'seller') return;
 
-            // Get all sales for the current user, no date filtering
-            const mySales = this.data.sales.filter(sale => sale.sellerId === this.currentUser.id);
+            const visibleDays = this.currentUser.visibleSalesDays;
+            let adminCutoffDate = null;
 
+            // 1. Determine the admin-defined boundary date
+            if (typeof visibleDays === 'number' && visibleDays >= 0) {
+                adminCutoffDate = new Date();
+                adminCutoffDate.setDate(adminCutoffDate.getDate() - visibleDays);
+                adminCutoffDate.setHours(0, 0, 0, 0);
+            }
+
+            // 2. Get the seller's filter choice
+            const filterType = document.querySelector('input[name="seller-filter-type"]:checked').value;
+            let filterStartDate = new Date();
+            let filterEndDate = new Date();
+
+            switch (filterType) {
+                case 'today':
+                    filterStartDate.setHours(0, 0, 0, 0);
+                    filterEndDate.setHours(23, 59, 59, 999);
+                    break;
+                case 'by_date':
+                    const selectedDateStr = document.getElementById('seller-filter-date').value;
+                    if (!selectedDateStr) {
+                        this.showToast('กรุณาเลือกวันที่', 'warning');
+                        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">กรุณาเลือกวันที่ที่ต้องการค้นหา</td></tr>';
+                        return;
+                    }
+                    filterStartDate = new Date(selectedDateStr);
+                    filterStartDate.setHours(0, 0, 0, 0);
+                    filterEndDate = new Date(selectedDateStr);
+                    filterEndDate.setHours(23, 59, 59, 999);
+                    break;
+                case 'by_range':
+                    const startDateStr = document.getElementById('seller-filter-start-date').value;
+                    const endDateStr = document.getElementById('seller-filter-end-date').value;
+                    if (!startDateStr || !endDateStr) {
+                        this.showToast('กรุณาเลือกวันที่เริ่มต้นและสิ้นสุด', 'warning');
+                        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">กรุณาเลือกช่วงวันที่ที่ต้องการค้นหา</td></tr>';
+                        return;
+                    }
+                    filterStartDate = new Date(startDateStr);
+                    filterStartDate.setHours(0, 0, 0, 0);
+                    filterEndDate = new Date(endDateStr);
+                    filterEndDate.setHours(23, 59, 59, 999);
+                    break;
+            }
+
+            // 3. Validate seller's filter against admin's boundary
+            if (adminCutoffDate && filterStartDate < adminCutoffDate) {
+                this.showToast(`คุณสามารถดูประวัติได้ไม่เกินวันที่ ${this.formatThaiDateFullYear(adminCutoffDate)}`, 'error');
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">อยู่นอกช่วงเวลาที่ได้รับอนุญาต</td></tr>`;
+                return;
+            }
+            
+            // 4. Filter the sales data
+            const mySales = this.data.sales.filter(sale => {
+                if (sale.sellerId !== this.currentUser.id) return false;
+                const saleDate = new Date(sale.date);
+                return saleDate >= filterStartDate && saleDate <= filterEndDate;
+            });
+
+            // 5. Render the results
             tbody.innerHTML = '';
-            // Sort by most recent first
+            if (mySales.length === 0) {
+                 tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">ไม่พบรายการขายในช่วงที่เลือก</td></tr>';
+                 return;
+            }
+
             mySales.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(sale => {
                 const tr = document.createElement('tr');
                 const saleDate = new Date(sale.date);
                 const dateString = this.formatThaiDateShortYear(sale.date);
                 const timeString = `${String(saleDate.getHours()).padStart(2, '0')}.${String(saleDate.getMinutes()).padStart(2, '0')} น.`;
-                
-                const itemsList = sale.items.map(item => {
-                    let itemText = `${item.name} (x${this.formatNumberSmart(item.quantity)})`;
-                    if (item.isSpecialPrice) {
-                        itemText += ` <span style="color:red;">(พิเศษ ฿${this.formatNumberSmart(item.price)})</span>`;
-                    }
-                    return itemText;
-                }).join('<br>');
-                
+                const itemsList = sale.items.map(item => `${item.name} (x${this.formatNumberSmart(item.quantity)})`).join('<br>');
                 let paymentDisplay = sale.paymentMethod || '-';
                 if (sale.paymentMethod === 'เครดิต' && sale.buyerName) {
                     paymentDisplay = `${sale.paymentMethod} (${sale.buyerName})`;
                 } else if (sale.paymentMethod === 'เงินโอน' && sale.transferorName) {
                     paymentDisplay = `${sale.paymentMethod} (${sale.transferorName})`;
                 }
-                
                 tr.innerHTML = `
                     <td data-label="วันที่">${dateString}</td>
                     <td data-label="เวลา">${timeString}</td>
                     <td data-label="รายการสินค้า">${itemsList}</td>
                     <td data-label="ยอดขาย">${this.formatNumberSmart(sale.total)}</td>
                     <td data-label="ประเภทชำระ">${paymentDisplay}</td>
-                    <td data-label="จัดการ">
-                        <div class="action-buttons">
-                            <button class="danger seller-delete-sale-btn" data-id="${sale.id}">ลบ</button>
-                        </div>
-                    </td>`;
+                    <td data-label="จัดการ"><div class="action-buttons"><button class="danger seller-delete-sale-btn" data-id="${sale.id}">ลบ</button></div></td>`;
                 tbody.appendChild(tr);
             });
         },
-        // ===============================================
-        // END: REVISED renderSellerSalesHistory FUNCTION
-        // ===============================================
 
         editSale(saleId) { const confirmation = confirm("การแก้ไขจะทำการ **ยกเลิก** รายการขายเดิม และนำสินค้าทั้งหมดกลับเข้าตะกร้าเพื่อให้คุณทำรายการใหม่\n\nคุณต้องการดำเนินการต่อหรือไม่?"); if (!confirmation) return; const saleToEdit = this.deleteSale(saleId, true); if (!saleToEdit) return; this.showToast('รายการถูกนำกลับเข้าตะกร้าแล้ว กรุณาแก้ไขและยืนยันการขายอีกครั้ง'); this.showPage('page-pos', saleToEdit); },
         deleteSale(saleId, isEditing = false) { 
@@ -3000,6 +3033,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let assignedProductIds = [];
             let storeId = null;
             let commissionRate = 0, commissionOnCash = false, commissionOnTransfer = false, commissionOnCredit = false;
+            let visibleSalesDays = null; // NEW: Initialize variable
 
             if (role === 'seller') {
                 const storeSelect = document.getElementById('user-store-select');
@@ -3026,6 +3060,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 commissionOnCash = document.getElementById('user-commission-cash').checked;
                 commissionOnTransfer = document.getElementById('user-commission-transfer').checked;
                 commissionOnCredit = document.getElementById('user-commission-credit').checked;
+
+                // START: NEW - Get value for visible sales days
+                const visibleDaysInput = document.getElementById('user-visible-days').value;
+                if (visibleDaysInput) {
+                    const parsedDays = parseInt(visibleDaysInput, 10);
+                    if (!isNaN(parsedDays) && parsedDays >= 0) {
+                        visibleSalesDays = parsedDays;
+                    }
+                }
+                // END: NEW
             }
 
             if (id) {
@@ -3050,6 +3094,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     user.commissionOnCash = commissionOnCash;
                     user.commissionOnTransfer = commissionOnTransfer;
                     user.commissionOnCredit = commissionOnCredit;
+                    user.visibleSalesDays = visibleSalesDays; // NEW: Save value
                 } else {
                     delete user.assignedProductIds;
                     delete user.salesStartDate;
@@ -3059,6 +3104,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     delete user.commissionOnCash;
                     delete user.commissionOnTransfer;
                     delete user.commissionOnCredit;
+                    delete user.visibleSalesDays; // NEW: Clean up value
                 }
                 this.showToast('แก้ไขข้อมูลผู้ใช้สำเร็จ');
             } else {
@@ -3080,6 +3126,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     newUser.commissionOnCash = commissionOnCash;
                     newUser.commissionOnTransfer = commissionOnTransfer;
                     newUser.commissionOnCredit = commissionOnCredit;
+                    newUser.visibleSalesDays = visibleSalesDays; // NEW: Save value
                 }
                 this.data.users.push(newUser);
                 this.showToast('เพิ่มผู้ใช้ใหม่สำเร็จ');
@@ -3106,7 +3153,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const salesContainer = document.getElementById('user-sales-period-container');
             const storeContainer = document.getElementById('user-store-assignment-container');
             const commissionContainer = document.getElementById('user-commission-settings-container');
-            
+            const historyContainer = document.getElementById('user-history-view-container'); // NEW
+
             if (user) { // Editing an existing user
                 document.getElementById('user-id').value = user.id;
                 document.getElementById('user-username').value = user.username;
@@ -3118,6 +3166,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     storeContainer.style.display = 'block';
                     salesContainer.style.display = 'block';
                     commissionContainer.style.display = 'block';
+                    historyContainer.style.display = 'block'; // NEW
                     productContainer.style.display = 'grid';
                     
                     document.getElementById('user-commission-rate').value = user.commissionRate || 0;
@@ -3125,6 +3174,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.getElementById('user-commission-transfer').checked = user.commissionOnTransfer || false;
                     document.getElementById('user-commission-credit').checked = user.commissionOnCredit || false;
 
+                    // START: NEW - Populate visible days input
+                    document.getElementById('user-visible-days').value = user.visibleSalesDays ?? '';
+                    // END: NEW
+                    
                     this.renderUserStoreAssignment(user.storeId);
                     this.renderUserProductAssignment(user.assignedProductIds || []);
                     document.getElementById('user-sales-start-date').value = user.salesStartDate || '';
@@ -3133,6 +3186,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     storeContainer.style.display = 'none';
                     salesContainer.style.display = 'none';
                     commissionContainer.style.display = 'none';
+                    historyContainer.style.display = 'none'; // NEW
                     productContainer.style.display = 'none';
                 }
             } else { // Setting up for a new user
@@ -3142,12 +3196,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 storeContainer.style.display = 'block';
                 salesContainer.style.display = 'block';
                 commissionContainer.style.display = 'block';
+                historyContainer.style.display = 'block'; // NEW
                 productContainer.style.display = 'grid';
                 
                 document.getElementById('user-commission-rate').value = '';
                 document.getElementById('user-commission-cash').checked = false;
                 document.getElementById('user-commission-transfer').checked = false;
                 document.getElementById('user-commission-credit').checked = false;
+                document.getElementById('user-visible-days').value = ''; // NEW: Clear input
                 this.renderUserStoreAssignment(); 
                 this.renderUserProductAssignment(); 
             }
@@ -3198,17 +3254,12 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('page-reports').innerHTML = `<h2>รายงานกำไร/ขาดทุน</h2> <form id="report-filter-form"> <label>ตั้งแต่วันที่:<input type="date" id="report-start-date"></label> <label>ถึงวันที่:<input type="date" id="report-end-date"></label> <label>คนขาย:<select id="report-seller"><option value="all">ทั้งหมด</option></select></label> <button type="submit" id="report-generate-btn">สร้างรายงาน</button> </form> <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 20px; text-align: center;"> <div style="background: #f9f9f9; border: 1px solid var(--border-color); padding: 15px; border-radius: 5px;"> <h3>ยอดขายรวม</h3><p id="report-total-sales" style="font-size: 1.5em; font-weight: bold;">฿0.00</p> </div> <div style="background: #f9f9f9; border: 1px solid var(--border-color); padding: 15px; border-radius: 5px;"> <h3>ต้นทุนรวม</h3><p id="report-total-cost" style="font-size: 1.5em; font-weight: bold;">฿0.00</p> </div> <div style="background: #f9f9f9; border: 1px solid var(--border-color); padding: 15px; border-radius: 5px;"> <h3>กำไรสุทธิ</h3><p id="report-net-profit" style="font-size: 1.5em; font-weight: bold; color: var(--success-color);">฿0.00</p> </div> </div>`; 
             document.getElementById('page-summary').innerHTML = `<h2>สรุปข้อมูลการขายแบบละเอียด</h2><div class="summary-section"> <h3>สรุปด่วน</h3> <div class="summary-form-inline"> <button type="button" id="summary-today-btn" style="background-color: var(--warning-color);">สรุปวันนี้</button> <button type="button" id="summary-all-btn" style="background-color: #673ab7;">สรุปทั้งหมด</button> </div> </div> <div class="summary-section"> <h3>สรุปวันที่เลือก</h3> <div class="summary-form-inline"> <label>เลือกวันที่: <input type="date" id="summary-single-date"></label> <button type="button" id="summary-by-day-btn" style="background-color: #03a9f4;">สรุปวันที่เลือก</button> </div> </div> <div class="summary-section"> <h3>สรุปวันที่ถึงวันที่</h3> <div class="summary-form-inline"> <label>จากวันที่: <input type="date" id="summary-range-start"></label> <label>ถึงวันที่: <input type="date" id="summary-range-end"></label> <button type="button" id="summary-range-btn" style="background-color: #009688;">สรุปตามช่วงวัน</button> </div> </div><div class="summary-section"> <h3>สรุปลูกหนี้ทั้งหมด (เครดิต)</h3> <div class="summary-form-inline"> <label>ผู้ขาย: <select id="summary-credit-seller"></select></label> <label>จากวันที่: <input type="date" id="summary-credit-start-date"></label> <label>ถึงวันที่: <input type="date" id="summary-credit-end-date"></label> <button type="button" id="summary-credit-btn" class="danger">สรุปข้อมูลลูกหนี้</button> </div> </div><div class="summary-section"> <h3>สรุปเงินโอนทั้งหมด</h3> <div class="summary-form-inline"> <label>ผู้ขาย: <select id="summary-transfer-seller"></select></label> <label>จากวันที่: <input type="date" id="summary-transfer-start-date"></label> <label>ถึงวันที่: <input type="date" id="summary-transfer-end-date"></label> <button type="button" id="summary-transfer-btn" style="background-color: #007bff;">สรุปข้อมูลเงินโอน</button> </div> </div>`; 
             document.getElementById('page-stores').innerHTML = `<h2>จัดการร้านค้า</h2> <form id="store-form"> <input type="hidden" id="store-id"> <label for="store-name">ชื่อร้านค้า:</label> <input type="text" id="store-name" required> <div class="form-actions"> <button type="submit" class="success">บันทึกร้านค้า</button> <button type="button" id="clear-store-form-btn" style="background-color:#6c757d;">เคลียร์ฟอร์ม</button> </div> </form> <div class="table-container"><table id="store-table"> <thead> <tr><th>ชื่อร้านค้า</th><th>จัดการ</th></tr> </thead> <tbody></tbody> </table></div>`;
-            document.getElementById('page-users').innerHTML = `<h2>จัดการผู้ใช้</h2> <form id="user-form"> <input type="hidden" id="user-id"> <label for="user-username">ชื่อผู้ใช้:</label> <input type="text" id="user-username" required> <label for="user-password">รหัสผ่าน:</label> <input type="password" id="user-password" placeholder="เว้นว่างไว้ถ้าไม่ต้องการเปลี่ยน"> <label for="user-role">ประเภท:</label> <select id="user-role" required> <option value="seller">Seller</option> <option value="admin">Admin</option> </select> <div id="user-store-assignment-container" style="display: none; grid-column: 1/-1;"></div> <div id="user-commission-settings-container" style="display: none; grid-column: 1/-1;"> <h4>ตั้งค่าคอมมิชชั่น</h4> <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px; align-items: center;"> <label for="user-commission-rate">อัตรา (%):</label> <input type="number" id="user-commission-rate" min="0" max="100" step="any" placeholder="เช่น 3, 5.5"> <label>คิดจากยอดขาย:</label> <div id="user-commission-sources"> <label style="display: inline-block; margin-right: 15px; font-weight: normal;"><input type="checkbox" id="user-commission-cash"> เงินสด</label> <label style="display: inline-block; margin-right: 15px; font-weight: normal;"><input type="checkbox" id="user-commission-transfer"> เงินโอน</label> <label style="display: inline-block; font-weight: normal;"><input type="checkbox" id="user-commission-credit"> เครดิต</label> </div> </div> </div> <div id="user-sales-period-container" style="display: none; grid-column: 1/-1;"> <h4>กำหนดระยะเวลาที่สามารถขายได้</h4> <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px; align-items: center;"> <label for="user-sales-start-date">วันที่เริ่มขาย:</label> <input type="date" id="user-sales-start-date"> <label for="user-sales-end-date">วันที่สิ้นสุด:</label> <input type="date" id="user-sales-end-date"> </div> </div> <div id="user-product-assignment-container" style="display: none; grid-column: 1/-1;"> <h4>กำหนดสินค้าที่สามารถขายได้</h4> <div id="user-product-assignment" style="max-height: 200px; overflow-y: auto; border: 1px solid #BFBFBF; padding: 10px; border-radius: 10px;"></div> </div> <div class="form-actions"> <button type="submit" class="success">บันทึกผู้ใช้</button> <button type="button" id="clear-user-form-btn" style="background-color:#6c757d;">เคลียร์ฟอร์ม</button> </div> </form> <div class="table-container"><table id="user-table"> <thead> <tr><th>ชื่อผู้ใช้</th><th>ประเภท</th><th>ร้านค้า</th><th>สินค้าที่ขายได้</th><th>ระยะเวลาที่ขายได้</th><th>จัดการ</th></tr> </thead> <tbody></tbody> </table></div>`; 
+            document.getElementById('page-users').innerHTML = `<h2>จัดการผู้ใช้</h2> <form id="user-form"> <input type="hidden" id="user-id"> <label for="user-username">ชื่อผู้ใช้:</label> <input type="text" id="user-username" required> <label for="user-password">รหัสผ่าน:</label> <input type="password" id="user-password" placeholder="เว้นว่างไว้ถ้าไม่ต้องการเปลี่ยน"> <label for="user-role">ประเภท:</label> <select id="user-role" required> <option value="seller">Seller</option> <option value="admin">Admin</option> </select> <div id="user-store-assignment-container" style="display: none; grid-column: 1/-1;"></div> <div id="user-commission-settings-container" style="display: none; grid-column: 1/-1;"> <h4>ตั้งค่าคอมมิชชั่น</h4> <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px; align-items: center;"> <label for="user-commission-rate">อัตรา (%):</label> <input type="number" id="user-commission-rate" min="0" max="100" step="any" placeholder="เช่น 3, 5.5"> <label>คิดจากยอดขาย:</label> <div id="user-commission-sources"> <label style="display: inline-block; margin-right: 15px; font-weight: normal;"><input type="checkbox" id="user-commission-cash"> เงินสด</label> <label style="display: inline-block; margin-right: 15px; font-weight: normal;"><input type="checkbox" id="user-commission-transfer"> เงินโอน</label> <label style="display: inline-block; font-weight: normal;"><input type="checkbox" id="user-commission-credit"> เครดิต</label> </div> </div> </div> <div id="user-history-view-container" style="display: none; grid-column: 1/-1;"> <h4>ตั้งค่าการแสดงผลประวัติ</h4> <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px; align-items: center;"> <label for="user-visible-days">จำนวนวันที่ดูประวัติขายได้:</label> <input type="number" id="user-visible-days" min="0" placeholder="0=วันนี้, 1=วันนี้และเมื่อวาน (เว้นว่าง=ทั้งหมด)"> </div> </div> <div id="user-sales-period-container" style="display: none; grid-column: 1/-1;"> <h4>กำหนดระยะเวลาที่สามารถขายได้</h4> <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px; align-items: center;"> <label for="user-sales-start-date">วันที่เริ่มขาย:</label> <input type="date" id="user-sales-start-date"> <label for="user-sales-end-date">วันที่สิ้นสุด:</label> <input type="date" id="user-sales-end-date"> </div> </div> <div id="user-product-assignment-container" style="display: none; grid-column: 1/-1;"> <h4>กำหนดสินค้าที่สามารถขายได้</h4> <div id="user-product-assignment" style="max-height: 200px; overflow-y: auto; border: 1px solid #BFBFBF; padding: 10px; border-radius: 10px;"></div> </div> <div class="form-actions"> <button type="submit" class="success">บันทึกผู้ใช้</button> <button type="button" id="clear-user-form-btn" style="background-color:#6c757d;">เคลียร์ฟอร์ม</button> </div> </form> <div class="table-container"><table id="user-table"> <thead> <tr><th>ชื่อผู้ใช้</th><th>ประเภท</th><th>ร้านค้า</th><th>สินค้าที่ขายได้</th><th>ระยะเวลาที่ขายได้</th><th>จัดการ</th></tr> </thead> <tbody></tbody> </table></div>`; 
             document.getElementById('page-data').innerHTML = `<h2>จัดการข้อมูล</h2>
+            <!-- Admin Sections -->
             <div class="data-management-section admin-only data-restore-section"><h3>โหลดข้อมูลจากไฟล์ (Restore)</h3><p style="color: var(--danger-color);"><b>คำเตือน:</b> การโหลดข้อมูลจากไฟล์จะรวมข้อมูลเข้ากับข้อมูลปัจจุบัน ข้อมูลที่ซ้ำกันจะถูกเขียนทับด้วยข้อมูลจากไฟล์!</p><input type="file" id="data-file-input" style="display: none;" accept=".json,application/json"><button type="button" id="load-from-file-btn" style="background-color: #E97132;">เลือกไฟล์สำรอง (.json)</button></div>
             <div class="data-management-section admin-only"><h3>สำรองข้อมูล (Backup)</h3><p>สำรองข้อมูลทั้งหมด (ผู้ใช้, สินค้า, ประวัติการขาย) ลงในไฟล์ JSON เพื่อเก็บไว้หรือย้ายไปยังเครื่องอื่น</p><button id="save-to-file-btn" class="success">บันทึกข้อมูลทั้งหมดลงไฟล์</button><button id="save-to-browser-btn" style="background-color: #007bff;">บันทึกข้อมูลปัจจุบันลงในเบราว์เซอร์</button></div>
             <div class="data-management-section admin-only" style="border-color: var(--danger-color);"><h3 style="color: var(--danger-color);">รีเซ็ตข้อมูล (*** การกระทำนี้ไม่สามารถย้อนกลับได้ ***)</h3><p>เลือกเพื่อล้างข้อมูลเฉพาะส่วนที่ต้องการ</p><button id="open-reset-modal-btn" class="danger">เปิดหน้าต่างรีเซ็ตข้อมูล</button></div>
-            <div class="collapsible-bar seller-only" data-target="seller-backup-content"><span>บันทึกข้อมูล (Backup)</span><span class="arrow">▶</span></div>
-            <div id="seller-backup-content" class="collapsible-content seller-only"><div style="text-align:center; padding-top: 10px;"><p style="margin-top:0;">สำรองข้อมูลทั้งหมด (ผู้ใช้, สินค้า, ประวัติการขาย) ลงในไฟล์ JSON เพื่อเก็บไว้หรือย้ายไปยังเครื่องอื่น</p><button id="save-to-file-btn-seller" class="success">บันทึกข้อมูลทั้งหมดลงไฟล์</button><button id="save-to-browser-btn-seller" style="background-color: #007bff;">บันทึกข้อมูลปัจจุบันลงในเบราว์เซอร์</button></div></div>
-            <div class="collapsible-bar seller-only" data-target="seller-summary-content"><span>รายงานสรุป (สำหรับผู้ใช้ปัจจุบัน)</span><span class="arrow">▶</span></div>
-            <div id="seller-summary-content" class="collapsible-content seller-only"><div style="text-align:center;"><div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;"><button id="my-summary-today-btn" style="background-color: var(--warning-color);">สรุปยอดขายวันนี้</button><button id="my-summary-all-btn" style="background-color: #673ab7;">สรุปทั้งหมดของฉัน</button><button id="my-summary-all-credit-btn" class="danger">สรุปลูกหนี้ทั้งหมด</button><button id="my-summary-all-transfer-btn" style="background-color: #007bff;">สรุปเงินโอนทั้งหมด</button></div><div class="summary-form-inline" style="margin-top: 15px; justify-content: center; flex-direction: column; gap:10px; align-items: stretch;"><label>เลือกวันที่: <input type="date" id="my-summary-date" style="width:100%;"></label><button id="my-summary-by-day-btn" style="background-color: #03a9f4;">สรุปยอดขายวันที่เลือก</button></div></div></div>
-            <div class="collapsible-bar seller-only" data-target="seller-recent-sales-content"><span>รายการขายทั้งหมด</span><span class="arrow">▶</span></div>
-            <div id="seller-recent-sales-content" class="collapsible-content seller-only"><div class="table-container" style="margin-top:0;"><table id="seller-sales-history-table"><thead><tr><th>วันที่</th><th>เวลา</th><th>รายการสินค้า</th><th>ยอดขาย</th><th>ประเภทชำระ</th><th>จัดการ</th></tr></thead><tbody></tbody></table></div></div>
             <div class="collapsible-bar admin-only" data-target="admin-stock-report-content" style="background-color: #00B050;"><span>รายงานสต็อกสินค้า</span><span class="arrow">▶</span></div>
             <div id="admin-stock-report-content" class="collapsible-content admin-only">
                 <div style="text-align:center; padding: 10px;">
@@ -3217,7 +3268,36 @@ document.addEventListener('DOMContentLoaded', () => {
                     <button id="recalculate-stock-btn" class="danger">คำนวณสต็อกใหม่ทั้งหมด</button>
                 </div>
                 <div id="stock-summary-report-container" style="margin-top: 15px;"></div>
-            </div>`; 
+            </div>
+
+            <!-- Seller Sections: Rebuilt for better filtering -->
+            <div class="collapsible-bar seller-only" data-target="seller-backup-content"><span>บันทึกข้อมูล (Backup)</span><span class="arrow">▶</span></div>
+            <div id="seller-backup-content" class="collapsible-content seller-only"><div style="text-align:center; padding-top: 10px;"><p style="margin-top:0;">สำรองข้อมูลทั้งหมด (ผู้ใช้, สินค้า, ประวัติการขาย) ลงในไฟล์ JSON เพื่อเก็บไว้หรือย้ายไปยังเครื่องอื่น</p><button id="save-to-file-btn-seller" class="success">บันทึกข้อมูลทั้งหมดลงไฟล์</button><button id="save-to-browser-btn-seller" style="background-color: #007bff;">บันทึกข้อมูลปัจจุบันลงในเบราว์เซอร์</button></div></div>
+            
+            <div class="collapsible-bar seller-only" data-target="seller-summary-content"><span>รายงานสรุป (สำหรับผู้ใช้ปัจจุบัน)</span><span class="arrow">▶</span></div>
+            <div id="seller-summary-content" class="collapsible-content seller-only"><div style="text-align:center;"><div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;"><button id="my-summary-today-btn" style="background-color: var(--warning-color);">สรุปยอดขายวันนี้</button><button id="my-summary-all-btn" style="background-color: #673ab7;">สรุปทั้งหมดของฉัน</button><button id="my-summary-all-credit-btn" class="danger">สรุปลูกหนี้ทั้งหมด</button><button id="my-summary-all-transfer-btn" style="background-color: #007bff;">สรุปเงินโอนทั้งหมด</button></div><div class="summary-form-inline" style="margin-top: 15px; justify-content: center; flex-direction: column; gap:10px; align-items: stretch;"><label>เลือกวันที่: <input type="date" id="my-summary-date" style="width:100%;"></label><button id="my-summary-by-day-btn" style="background-color: #03a9f4;">สรุปยอดขายวันที่เลือก</button></div></div></div>
+            
+            <div class="collapsible-bar seller-only active" data-target="seller-sales-history-container"><span>ค้นหารายการขาย</span><span class="arrow" style="transform: rotate(90deg);">▶</span></div>
+            <div id="seller-sales-history-container" class="collapsible-content seller-only active">
+                <form id="seller-sales-filter-form" style="max-width: none; background-color: #eef5ff; padding: 15px; border-radius: 8px;">
+                    <div style="grid-column: 1/-1; display:flex; flex-wrap:wrap; gap: 20px; justify-content:center; align-items:center; margin-bottom: 10px;">
+                        <label><input type="radio" name="seller-filter-type" value="today" checked> วันนี้</label>
+                        <label><input type="radio" name="seller-filter-type" value="by_date"> เลือกวัน</label>
+                        <label><input type="radio" name="seller-filter-type" value="by_range"> เลือกช่วง</label>
+                    </div>
+                    <div id="seller-date-inputs" style="grid-column: 1/-1; display:flex; flex-wrap:wrap; gap: 15px; justify-content:center; align-items:flex-end;">
+                        <div id="seller-filter-by-date-div" style="display:none;"><label>เลือกวันที่:<input type="date" id="seller-filter-date"></label></div>
+                        <div id="seller-filter-by-range-div" style="display:none; display:flex; gap:10px; flex-wrap:wrap; justify-content:center;">
+                           <label>จาก:<input type="date" id="seller-filter-start-date"></label>
+                           <label>ถึง:<input type="date" id="seller-filter-end-date"></label>
+                        </div>
+                    </div>
+                    <div class="form-actions" style="margin-top: 15px;">
+                        <button type="submit" style="background-color:#008CBA;">แสดงรายการ</button>
+                    </div>
+                </form>
+                <div class="table-container" style="margin-top:20px;"><table id="seller-sales-history-table"><thead><tr><th>วันที่</th><th>เวลา</th><th>รายการสินค้า</th><th>ยอดขาย</th><th>ประเภทชำระ</th><th>จัดการ</th></tr></thead><tbody></tbody></table></div>
+            </div>`;
         },
         
         attachEventListeners(){ 
@@ -3232,7 +3312,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (e.target.id === 'stock-in-form') { e.preventDefault(); this.saveStockIn(e); }
                 if (e.target.id === 'stock-out-form') { e.preventDefault(); this.saveStockOut(e); }
                 if (e.target.id === 'report-filter-form') { e.preventDefault(); this.renderReport(e); } 
-                if (e.target.id === 'user-form') { e.preventDefault(); this.saveUser(e); } 
+                if (e.target.id === 'user-form') { e.preventDefault(); this.saveUser(e); }
+                if (e.target.id === 'seller-sales-filter-form') { 
+                    e.preventDefault(); 
+                    this.renderSellerSalesHistoryWithFilter(); 
+                }
             }); 
             mainApp.addEventListener('click', (e) => { 
                 if (e.target.id === 'process-sale-btn') this.processSale(); 
@@ -3244,7 +3328,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const saleId = e.target.dataset.id;
                     if (confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรายการขายนี้? สต็อกสินค้าจะถูกคืนเข้าระบบ')) {
                         this.deleteSale(saleId);
-                        this.renderSellerSalesHistory();
+                        this.renderSellerSalesHistoryWithFilter();
                     }
                 }
                 if (e.target.id === 'clear-product-form-btn') { document.getElementById('product-form').reset(); document.getElementById('product-id').value = ''; } 
@@ -3301,11 +3385,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     const salesDiv = document.getElementById('user-sales-period-container'); 
                     const storeDiv = document.getElementById('user-store-assignment-container');
                     const commissionDiv = document.getElementById('user-commission-settings-container');
-                    if(productDiv && salesDiv && storeDiv && commissionDiv) { 
+                    const historyDiv = document.getElementById('user-history-view-container'); // NEW
+                    if(productDiv && salesDiv && storeDiv && commissionDiv && historyDiv) { // NEW: Add historyDiv check
                         if (e.target.value === 'seller') { 
                             storeDiv.style.display = 'block'; 
                             salesDiv.style.display = 'block'; 
                             commissionDiv.style.display = 'block';
+                            historyDiv.style.display = 'block'; // NEW
                             productDiv.style.display = 'grid'; 
                             this.renderUserStoreAssignment();
                             this.renderUserProductAssignment(); 
@@ -3313,6 +3399,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             storeDiv.style.display = 'none';
                             salesDiv.style.display = 'none'; 
                             commissionDiv.style.display = 'none';
+                            historyDiv.style.display = 'none'; // NEW
                             productDiv.style.display = 'none'; 
                         } 
                     } 
@@ -3340,6 +3427,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else {
                         dateInput.classList.remove('backdating-active');
                         timeInput.classList.remove('backdating-active');
+                    }
+                }
+
+                if (e.target.name === 'seller-filter-type') {
+                    const byDateDiv = document.getElementById('seller-filter-by-date-div');
+                    const byRangeDiv = document.getElementById('seller-filter-by-range-div');
+                    switch (e.target.value) {
+                        case 'today':
+                            byDateDiv.style.display = 'none';
+                            byRangeDiv.style.display = 'none';
+                            break;
+                        case 'by_date':
+                            byDateDiv.style.display = 'block';
+                            byRangeDiv.style.display = 'none';
+                            break;
+                        case 'by_range':
+                            byDateDiv.style.display = 'none';
+                            byRangeDiv.style.display = 'flex';
+                            break;
                     }
                 }
             }); 
