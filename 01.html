@@ -717,17 +717,29 @@
             
             /* --- DETAILED SALES TABLE (NEW) --- */
             #modalBodyContent .detailed-sales-table th:nth-of-type(1),
-            #modalBodyContent .detailed-sales-table td:nth-of-type(1) { width: 13%; white-space: nowrap; } /* Date */
+            #modalBodyContent .detailed-sales-table td:nth-of-type(1) { width: 15%; white-space: nowrap; } /* Date */
             #modalBodyContent .detailed-sales-table th:nth-of-type(2),
-            #modalBodyContent .detailed-sales-table td:nth-of-type(2) { width: 12%; white-space: nowrap; } /* Time */
+            #modalBodyContent .detailed-sales-table td:nth-of-type(2) { width: 14%; white-space: nowrap; } /* Time */
             #modalBodyContent .detailed-sales-table th:nth-of-type(3),
-            #modalBodyContent .detailed-sales-table td:nth-of-type(3) { width: 25%; } /* Items */
+            #modalBodyContent .detailed-sales-table td:nth-of-type(3) { width: 31%; } /* Items */
             #modalBodyContent .detailed-sales-table th:nth-of-type(4),
-            #modalBodyContent .detailed-sales-table td:nth-of-type(4) { width: 13%; white-space: nowrap; } /* Total */
+            #modalBodyContent .detailed-sales-table td:nth-of-type(4) { width: 15%; white-space: nowrap; } /* Total */
             #modalBodyContent .detailed-sales-table th:nth-of-type(5),
-            #modalBodyContent .detailed-sales-table td:nth-of-type(5) { width: 12%; white-space: nowrap; } /* Profit */
-            #modalBodyContent .detailed-sales-table th:nth-of-type(6),
-            #modalBodyContent .detailed-sales-table td:nth-of-type(6) { width: 25%; } /* Payment */
+            #modalBodyContent .detailed-sales-table td:nth-of-type(5) { width: 25%; } /* Payment */
+            /* Admin version with profit */
+            #modalBodyContent .detailed-sales-table.admin-view th:nth-of-type(1),
+            #modalBodyContent .detailed-sales-table.admin-view td:nth-of-type(1) { width: 13%; } /* Date */
+            #modalBodyContent .detailed-sales-table.admin-view th:nth-of-type(2),
+            #modalBodyContent .detailed-sales-table.admin-view td:nth-of-type(2) { width: 12%; } /* Time */
+            #modalBodyContent .detailed-sales-table.admin-view th:nth-of-type(3),
+            #modalBodyContent .detailed-sales-table.admin-view td:nth-of-type(3) { width: 25%; } /* Items */
+            #modalBodyContent .detailed-sales-table.admin-view th:nth-of-type(4),
+            #modalBodyContent .detailed-sales-table.admin-view td:nth-of-type(4) { width: 13%; } /* Total */
+            #modalBodyContent .detailed-sales-table.admin-view th:nth-of-type(5),
+            #modalBodyContent .detailed-sales-table.admin-view td:nth-of-type(5) { width: 12%; } /* Profit */
+            #modalBodyContent .detailed-sales-table.admin-view th:nth-of-type(6),
+            #modalBodyContent .detailed-sales-table.admin-view td:nth-of-type(6) { width: 25%; } /* Payment */
+
 
             /* --- PRODUCT SUMMARY Table (For BOTH Admin & Seller) --- */
             #modalBodyContent .product-summary-table th:nth-of-type(1),
@@ -1274,8 +1286,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else if (choice === 'csv') {
                     this.exportDetailedListToCsv(this.summaryContext);
                 }
-            }
-            else { // Fallback for Seller's summary
+            } else if (this.summaryContext.type === 'credit') {
+                if (choice === 'display') {
+                    const html = this.buildCreditSummaryHtml(this.summaryContext);
+                    this.openSummaryModal(html);
+                } else if (choice === 'csv') {
+                    this.exportCreditSummaryToCsv(this.summaryContext);
+                }
+            } else if (this.summaryContext.type === 'transfer') {
+                 if (choice === 'display') {
+                    const html = this.buildTransferSummaryHtml(this.summaryContext);
+                    this.openSummaryModal(html);
+                } else if (choice === 'csv') {
+                    this.exportTransferSummaryToCsv(this.summaryContext);
+                }
+            } else { // Fallback for aggregated_pos summary
                 if (choice === 'display') {
                     const html = this.buildPosSummaryHtml(this.summaryContext);
                     this.openSummaryModal(html);
@@ -1345,6 +1370,105 @@ document.addEventListener('DOMContentLoaded', () => {
             this.openSummaryOutputModal();
         },
         
+        runSellerDetailedReport() {
+            const startDateStr = document.getElementById('seller-report-start-date').value;
+            const endDateStr = document.getElementById('seller-report-end-date').value;
+            const selectedPaymentTypes = Array.from(document.querySelectorAll('#seller-report-payment-types input:checked')).map(cb => cb.value);
+
+            if (!startDateStr || !endDateStr) { this.showToast("กรุณาเลือกวันที่เริ่มต้นและสิ้นสุด", "error"); return; }
+            const startDate = new Date(startDateStr); startDate.setHours(0, 0, 0, 0);
+            const endDate = new Date(endDateStr); endDate.setHours(23, 59, 59, 999);
+            if (startDate > endDate) { this.showToast("วันที่เริ่มต้นต้องมาก่อนวันที่สิ้นสุด", "error"); return; }
+            if (selectedPaymentTypes.length === 0) { this.showToast("กรุณาเลือกประเภทการชำระเงินอย่างน้อย 1 อย่าง", "error"); return; }
+
+            const filteredSales = this.filterSalesData(startDate, endDate, this.currentUser.id, selectedPaymentTypes);
+
+            if (filteredSales.length === 0) { this.showToast("ไม่พบข้อมูลการขายตามเงื่อนไขที่กำหนด"); return; }
+
+            const thaiDateString = `${this.formatThaiDateFullYear(startDate)} ถึง ${this.formatThaiDateFullYear(endDate)}`;
+            const title = `รายงานการขายของ ${this.currentUser.username}`;
+            const periodName = `Seller_Detailed_Report_${this.currentUser.username}_${startDateStr}_to_${endDateStr}`;
+
+            this.summaryContext = {
+                type: 'detailed_list',
+                filteredSales,
+                title,
+                thaiDateString,
+                periodName,
+                sellerId: this.currentUser.id
+            };
+
+            this.openSummaryOutputModal();
+        },
+
+        runSellerCreditSummary() {
+            const startDateStr = document.getElementById('seller-credit-start-date').value;
+            const endDateStr = document.getElementById('seller-credit-end-date').value;
+
+            if (!startDateStr || !endDateStr) { this.showToast("กรุณาเลือกวันที่เริ่มต้นและสิ้นสุด", "error"); return; }
+            const startDate = new Date(startDateStr); startDate.setHours(0, 0, 0, 0);
+            const endDate = new Date(endDateStr); endDate.setHours(23, 59, 59, 999);
+            if (startDate > endDate) { this.showToast("วันที่เริ่มต้นต้องมาก่อนวันที่สิ้นสุด", "error"); return; }
+            
+            const filteredCreditSales = this.data.sales.filter(s => {
+                if (s.sellerId !== this.currentUser.id || s.paymentMethod !== 'เครดิต') return false;
+                const saleDate = new Date(s.date);
+                return saleDate >= startDate && saleDate <= endDate;
+            });
+
+            if (filteredCreditSales.length === 0) { this.showToast("ไม่พบข้อมูลลูกหนี้ (เครดิต) ในช่วงเวลาที่เลือก", "warning"); return; }
+
+            const summaryTimestamp = this.formatThaiTimestamp(new Date());
+
+            this.summaryContext = {
+                type: 'credit',
+                creditData: {
+                    filteredCreditSales: filteredCreditSales.sort((a,b) => new Date(b.date) - new Date(a.date)),
+                    sellerName: this.currentUser.username,
+                    startDate,
+                    endDate,
+                    summaryTimestamp
+                },
+                title: `สรุปรายการลูกหนี้ของ ${this.currentUser.username}`,
+                periodName: `Credit_Seller_${this.currentUser.id}_${startDateStr}_to_${endDateStr}`
+            };
+            this.openSummaryOutputModal();
+        },
+
+        runSellerTransferSummary() {
+            const startDateStr = document.getElementById('seller-transfer-start-date').value;
+            const endDateStr = document.getElementById('seller-transfer-end-date').value;
+
+            if (!startDateStr || !endDateStr) { this.showToast("กรุณาเลือกวันที่เริ่มต้นและสิ้นสุด", "error"); return; }
+            const startDate = new Date(startDateStr); startDate.setHours(0, 0, 0, 0);
+            const endDate = new Date(endDateStr); endDate.setHours(23, 59, 59, 999);
+            if (startDate > endDate) { this.showToast("วันที่เริ่มต้นต้องมาก่อนวันที่สิ้นสุด", "error"); return; }
+
+            const filteredTransferSales = this.data.sales.filter(s => {
+                if (s.sellerId !== this.currentUser.id || s.paymentMethod !== 'เงินโอน') return false;
+                const saleDate = new Date(s.date);
+                return saleDate >= startDate && saleDate <= endDate;
+            });
+            
+            if (filteredTransferSales.length === 0) { this.showToast("ไม่พบข้อมูลเงินโอนในช่วงเวลาที่เลือก", "warning"); return; }
+
+            const summaryTimestamp = this.formatThaiTimestamp(new Date());
+
+            this.summaryContext = {
+                type: 'transfer',
+                transferData: {
+                    filteredTransferSales: filteredTransferSales.sort((a,b) => new Date(b.date) - new Date(a.date)),
+                    sellerName: this.currentUser.username,
+                    startDate,
+                    endDate,
+                    summaryTimestamp
+                },
+                title: `สรุปรายการเงินโอนของ ${this.currentUser.username}`,
+                periodName: `Transfer_Seller_${this.currentUser.id}_${startDateStr}_to_${endDateStr}`
+            };
+            this.openSummaryOutputModal();
+        },
+
         _runSummary(startDate, endDate, title, periodName, sellerId = null) { 
             const summaryResult = this.generatePosSummaryData(startDate, endDate, sellerId); 
             if (summaryResult.salesCount === 0) { this.showToast("ไม่พบข้อมูลการขายในช่วงที่กำหนด"); return; } 
@@ -1361,6 +1485,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         buildDetailedListHtml(context) {
             const { filteredSales, title, thaiDateString, sellerId } = context;
+            const user = this.data.users.find(u => u.id == sellerId);
+            const isSellerReport = user && user.role === 'seller';
 
             let tableRows = '';
             let totalSales = 0;
@@ -1390,23 +1516,24 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td data-label="เวลา">${timeString}</td>
                     <td data-label="รายการ">${itemsList}</td>
                     <td data-label="ยอดขาย">${this.formatNumberSmart(sale.total)}</td>
-                    <td data-label="กำไร" style="color:${sale.profit >= 0 ? 'green' : 'red'};">${this.formatNumberSmart(sale.profit)}</td>
+                    ${!isSellerReport ? `<td data-label="กำไร" style="color:${sale.profit >= 0 ? 'green' : 'red'};">${this.formatNumberSmart(sale.profit)}</td>` : ''}
                     <td data-label="ประเภทชำระ">${paymentDisplay}</td>
                 </tr>`;
                 
                 totalSales += sale.total;
-                totalProfit += sale.profit;
+                if(!isSellerReport) {
+                    totalProfit += sale.profit;
+                }
             });
             
             let footerRows = `<tr style="font-weight: bold; background-color: #f0f0f0;">
                 <td colspan="3" style="text-align: right;">ยอดรวมทั้งหมด:</td>
                 <td>${this.formatNumberSmart(totalSales)}</td>
-                <td style="color:${totalProfit >= 0 ? 'green' : 'red'};">${this.formatNumberSmart(totalProfit)}</td>
+                ${!isSellerReport ? `<td style="color:${totalProfit >= 0 ? 'green' : 'red'};">${this.formatNumberSmart(totalProfit)}</td>` : ''}
                 <td></td>
             </tr>`;
             
-            const seller = this.data.users.find(u => u.id == sellerId);
-            if (seller && seller.role === 'seller' && seller.commissionRate > 0) {
+            if (isSellerReport && user.commissionRate > 0) {
                 let totalCommission = 0;
                 let commissionDetails = [];
 
@@ -1414,51 +1541,53 @@ document.addEventListener('DOMContentLoaded', () => {
                 const salesByTransfer = filteredSales.filter(s => s.paymentMethod === 'เงินโอน').reduce((sum, s) => sum + s.total, 0);
                 const salesByCredit = filteredSales.filter(s => s.paymentMethod === 'เครดิต').reduce((sum, s) => sum + s.total, 0);
 
-                if (seller.commissionOnCash && salesByCash > 0) {
-                    const commission = salesByCash * (seller.commissionRate / 100);
+                if (user.commissionOnCash && salesByCash > 0) {
+                    const commission = salesByCash * (user.commissionRate / 100);
                     commissionDetails.push({ label: `ยอดขายเงินสด`, amount: salesByCash, commission: commission });
                     totalCommission += commission;
                 }
-                if (seller.commissionOnTransfer && salesByTransfer > 0) {
-                    const commission = salesByTransfer * (seller.commissionRate / 100);
+                if (user.commissionOnTransfer && salesByTransfer > 0) {
+                    const commission = salesByTransfer * (user.commissionRate / 100);
                     commissionDetails.push({ label: `ยอดขายเงินโอน`, amount: salesByTransfer, commission: commission });
                     totalCommission += commission;
                 }
-                if (seller.commissionOnCredit && salesByCredit > 0) {
-                    const commission = salesByCredit * (seller.commissionRate / 100);
+                if (user.commissionOnCredit && salesByCredit > 0) {
+                    const commission = salesByCredit * (user.commissionRate / 100);
                     commissionDetails.push({ label: `ยอดขายเครดิต`, amount: salesByCredit, commission: commission });
                     totalCommission += commission;
                 }
                 
                 if(commissionDetails.length > 0) {
-                    footerRows += `<tr style="font-weight: bold; background-color: #e0f7fa;"><td colspan="6" style="text-align:center;">คำนวณค่าคอมมิชชั่น (${seller.commissionRate}%)</td></tr>`;
+                    const colspan = isSellerReport ? 5 : 6;
+                    footerRows += `<tr style="font-weight: bold; background-color: #e0f7fa;"><td colspan="${colspan}" style="text-align:center;">คำนวณค่าคอมมิชชั่น (${user.commissionRate}%)</td></tr>`;
                     commissionDetails.forEach(detail => {
                          footerRows += `<tr style="background-color: #e0f7fa;">
                             <td colspan="3" style="text-align: right;">${detail.label}: ${this.formatNumberSmart(detail.amount)} บาท</td>
-                            <td colspan="3" style="text-align: left; padding-left: 20px; font-weight:bold;">ค่าคอมฯ: ${this.formatNumberSmart(detail.commission)} บาท</td>
+                            <td colspan="${colspan - 3}" style="text-align: left; padding-left: 20px; font-weight:bold;">ค่าคอมฯ: ${this.formatNumberSmart(detail.commission)} บาท</td>
                          </tr>`;
                     });
                     footerRows += `<tr style="font-weight: bold; background-color: #cce7ee;">
                         <td colspan="3" style="text-align: right;">รวมค่าคอมมิชชั่นทั้งหมด:</td>
-                        <td colspan="3" style="text-align: left; padding-left: 20px; font-size: 1.1em;">${this.formatNumberSmart(totalCommission)} บาท</td>
+                        <td colspan="${colspan - 3}" style="text-align: left; padding-left: 20px; font-size: 1.1em;">${this.formatNumberSmart(totalCommission)} บาท</td>
                     </tr>`;
                 }
             }
-
+            
+            const tableClass = isSellerReport ? 'detailed-sales-table' : 'detailed-sales-table admin-view';
 
             return `
                 <div style="text-align:center;">
                     <h2>${title}</h2>
                     <p style="font-size:0.9em; color:#333; font-weight:bold;">ช่วงวันที่ : ${thaiDateString}</p>
                     <div class="table-container">
-                        <table class="detailed-sales-table">
+                        <table class="${tableClass}">
                             <thead>
                                 <tr>
                                     <th>วันที่</th>
                                     <th>เวลา</th>
                                     <th>รายการสินค้า</th>
                                     <th>ยอดขาย (บาท)</th>
-                                    <th>กำไร (บาท)</th>
+                                    ${!isSellerReport ? '<th>กำไร (บาท)</th>' : ''}
                                     <th>ประเภทชำระ</th>
                                 </tr>
                             </thead>
@@ -1476,6 +1605,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         exportDetailedListToCsv(context) {
             const { filteredSales, title, periodName, thaiDateString, sellerId } = context;
+            const user = this.data.users.find(u => u.id == sellerId);
+            const isSellerReport = user && user.role === 'seller';
+
             let csvRows = [];
             
             const summaryTimestamp = this.formatThaiTimestamp(new Date());
@@ -1484,7 +1616,13 @@ document.addEventListener('DOMContentLoaded', () => {
             csvRows.push(['ช่วงวันที่:', thaiDateString]);
             csvRows.push(['สรุปเมื่อ:', summaryTimestamp]);
             csvRows.push([]); 
-            csvRows.push(['วันที่', 'เวลา', 'รายการสินค้า (ชื่อ)', 'ราคาต่อหน่วย', 'จำนวน', 'ราคารวมต่อรายการ', 'ยอดขายรวม (บาท)', 'กำไรรวม (บาท)', 'ประเภทชำระ', 'รายละเอียดชำระ', 'กำหนดชำระ', 'ผู้ขาย', 'ร้านค้า']);
+
+            let headers = ['วันที่', 'เวลา', 'รายการสินค้า (ชื่อ)', 'ราคาต่อหน่วย', 'จำนวน', 'ราคารวมต่อรายการ', 'ยอดขายรวม (บาท)'];
+            if (!isSellerReport) {
+                headers.push('กำไรรวม (บาท)');
+            }
+            headers.push('ประเภทชำระ', 'รายละเอียดชำระ', 'กำหนดชำระ', 'ผู้ขาย', 'ร้านค้า');
+            csvRows.push(headers);
 
             let grandTotalSales = 0;
             let grandTotalProfit = 0;
@@ -1503,34 +1641,45 @@ document.addEventListener('DOMContentLoaded', () => {
                 const dueDateString = this.formatThaiDateShortYear(sale.creditDueDate);
                 
                 grandTotalSales += sale.total;
-                grandTotalProfit += sale.profit;
+                if (!isSellerReport) {
+                    grandTotalProfit += sale.profit;
+                }
 
                 sale.items.forEach((item, index) => {
                     const itemTotal = item.price * item.quantity;
-                    const row = [
+                    let row = [
                         index === 0 ? dateString : '',
                         index === 0 ? timeString : '',
                         item.name + (item.isSpecialPrice ? ' (พิเศษ)' : ''),
                         this.formatNumberSmart(item.price),
                         this.formatNumberSmart(item.quantity),
                         this.formatNumberSmart(itemTotal),
-                        index === 0 ? this.formatNumberSmart(sale.total) : '',
-                        index === 0 ? this.formatNumberSmart(sale.profit) : '',
+                        index === 0 ? this.formatNumberSmart(sale.total) : ''
+                    ];
+
+                    if (!isSellerReport) {
+                        row.push(index === 0 ? this.formatNumberSmart(sale.profit) : '');
+                    }
+
+                    row.push(
                         index === 0 ? (sale.paymentMethod || 'เงินสด') : '',
                         index === 0 ? paymentDetail : '',
                         index === 0 ? dueDateString : '',
                         index === 0 ? (sale.sellerName || '-') : '',
                         index === 0 ? (sale.storeName || '-') : ''
-                    ];
+                    );
                     csvRows.push(row);
                 });
             });
 
             csvRows.push([]);
-            csvRows.push(['', '', '', '', '', 'ยอดรวมทั้งหมด', this.formatNumberSmart(grandTotalSales), this.formatNumberSmart(grandTotalProfit)]);
+            let footerRow = ['', '', '', '', '', 'ยอดรวมทั้งหมด', this.formatNumberSmart(grandTotalSales)];
+            if (!isSellerReport) {
+                footerRow.push(this.formatNumberSmart(grandTotalProfit));
+            }
+            csvRows.push(footerRow);
             
-            const seller = this.data.users.find(u => u.id == sellerId);
-            if (seller && seller.role === 'seller' && seller.commissionRate > 0) {
+            if (isSellerReport && user.commissionRate > 0) {
                 let totalCommission = 0;
                 let commissionDetails = [];
 
@@ -1538,25 +1687,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 const salesByTransfer = filteredSales.filter(s => s.paymentMethod === 'เงินโอน').reduce((sum, s) => sum + s.total, 0);
                 const salesByCredit = filteredSales.filter(s => s.paymentMethod === 'เครดิต').reduce((sum, s) => sum + s.total, 0);
 
-                if (seller.commissionOnCash && salesByCash > 0) {
-                    const commission = salesByCash * (seller.commissionRate / 100);
+                if (user.commissionOnCash && salesByCash > 0) {
+                    const commission = salesByCash * (user.commissionRate / 100);
                     commissionDetails.push({ label: `ยอดขายเงินสด`, amount: salesByCash, commission: commission });
                     totalCommission += commission;
                 }
-                if (seller.commissionOnTransfer && salesByTransfer > 0) {
-                    const commission = salesByTransfer * (seller.commissionRate / 100);
+                if (user.commissionOnTransfer && salesByTransfer > 0) {
+                    const commission = salesByTransfer * (user.commissionRate / 100);
                     commissionDetails.push({ label: `ยอดขายเงินโอน`, amount: salesByTransfer, commission: commission });
                     totalCommission += commission;
                 }
-                if (seller.commissionOnCredit && salesByCredit > 0) {
-                    const commission = salesByCredit * (seller.commissionRate / 100);
+                if (user.commissionOnCredit && salesByCredit > 0) {
+                    const commission = salesByCredit * (user.commissionRate / 100);
                     commissionDetails.push({ label: `ยอดขายเครดิต`, amount: salesByCredit, commission: commission });
                     totalCommission += commission;
                 }
                 
                 if(commissionDetails.length > 0) {
                     csvRows.push([]);
-                    csvRows.push([`คำนวณค่าคอมมิชชั่น (${seller.commissionRate}%)`]);
+                    csvRows.push([`คำนวณค่าคอมมิชชั่น (${user.commissionRate}%)`]);
                     commissionDetails.forEach(detail => {
                          csvRows.push(['', '', '', '', '', `${detail.label}: ${this.formatNumberSmart(detail.amount)} บาท`, `ค่าคอมฯ: ${this.formatNumberSmart(detail.commission)} บาท`]);
                     });
@@ -1577,6 +1726,188 @@ document.addEventListener('DOMContentLoaded', () => {
             this.showToast(`ส่งออกไฟล์ CSV '${fileName}' สำเร็จ`);
         },
         
+        buildCreditSummaryHtml(context) {
+            const { creditData } = context;
+            const { filteredCreditSales, sellerName, startDate, endDate, summaryTimestamp } = creditData;
+            
+            const formatCurrency = (num) => this.formatNumberSmart(num);
+            const formatDate = (dateStr) => this.formatThaiDateShortYear(dateStr);
+            
+            let totalCredit = 0;
+            let creditRows = '';
+            filteredCreditSales.forEach(s => {
+                totalCredit += s.total;
+                const itemsList = s.items.map(item => { 
+                    const product = this.data.products.find(p => p.id === item.productId); 
+                    const unit = product ? product.unit : 'หน่วย'; 
+                    return `${item.name}(${this.formatNumberSmart(item.quantity)} ${unit})`; 
+                }).join(', ');
+                
+                creditRows += `<tr>
+                    <td data-label="วันที่">${formatDate(s.date)}</td>
+                    <td data-label="ผู้ซื้อ">${s.buyerName || '-'}</td>
+                    <td data-label="ผู้ขาย">${s.sellerName || '-'}</td>
+                    <td data-label="รายการ">${itemsList}</td>
+                    <td data-label="ยอดเงิน(บาท)">${formatCurrency(s.total)}</td>
+                    <td data-label="กำหนดชำระ">${formatDate(s.creditDueDate)}</td>
+                </tr>`;
+            });
+
+            const periodLine = `<p style="font-size:0.9em; color: #333; font-weight: bold; margin-bottom: 8px;">ช่วงเวลา: ${this.formatThaiDateFullYear(startDate)} ถึง ${this.formatThaiDateFullYear(endDate)}</p>`;
+            
+            return `
+                <div style="text-align:center;">
+                    <h2>สรุปรายการลูกหนี้ของ: ${sellerName}</h2>
+                    <p style="font-size:0.8em; color:#555; margin-bottom: 0;">สรุปเมื่อ: ${summaryTimestamp}</p>
+                    ${periodLine}
+                    <table class="credit-details-table" style="margin-top: 15px;">
+                        <thead><tr><th>วันที่</th><th>ผู้ซื้อ</th><th>ผู้ขาย</th><th>รายการ</th><th>ยอดเงิน (บาท)</th><th>กำหนดชำระ</th></tr></thead>
+                        <tbody>${creditRows}</tbody>
+                    </table>
+                    <p style="text-align:right; font-size:1.2em; font-weight:bold; margin-top:15px;">ยอดรวมลูกหนี้ทั้งหมด: ${formatCurrency(totalCredit)} บาท</p>
+                </div>
+            `;
+        },
+
+        exportCreditSummaryToCsv(context) {
+            const { creditData, periodName } = context;
+            const { filteredCreditSales, sellerName, startDate, endDate, summaryTimestamp } = creditData;
+            let csvRows = [];
+            
+            const formatCurrency = (num) => this.formatNumberSmart(num);
+            const formatDate = (dateStr) => this.formatThaiDateShortYear(dateStr);
+            const periodString = `${this.formatThaiDateFullYear(startDate)} ถึง ${this.formatThaiDateFullYear(endDate)}`;
+
+            csvRows.push(['สรุปโดย:', this.currentUser.username]);
+            csvRows.push(['สรุปเมื่อ:', summaryTimestamp]);
+            csvRows.push([`สรุปรายการลูกหนี้ของ ${sellerName}:`, periodString]);
+            csvRows.push([]);
+
+            csvRows.push(['วันที่', 'ผู้ซื้อ', 'ผู้ขาย', 'รายการสินค้า', 'ยอดเงิน (บาท)', 'กำหนดชำระ']);
+            
+            let totalCredit = 0;
+            filteredCreditSales.forEach(s => {
+                totalCredit += s.total;
+                const itemsList = s.items.map(item => { 
+                    const product = this.data.products.find(p => p.id === item.productId); 
+                    const unit = product ? product.unit : 'หน่วย'; 
+                    return `${item.name}(${this.formatNumberSmart(item.quantity)} ${unit})`; 
+                }).join('; ');
+                
+                csvRows.push([
+                    formatDate(s.date),
+                    s.buyerName || '-',
+                    s.sellerName || '-',
+                    itemsList,
+                    formatCurrency(s.total),
+                    formatDate(s.creditDueDate)
+                ]);
+            });
+
+            csvRows.push([]);
+            csvRows.push(['', '', '', '', 'ยอดรวมลูกหนี้ทั้งหมด (บาท)', formatCurrency(totalCredit)]);
+
+            const csvContent = csvRows.map(row => row.map(field => `"${String(field).replace(/"/g, '""')}"`).join(',')).join("\n");
+            const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+            const fileName = `Credit_Summary_${periodName}_${new Date().getTime()}.csv`;
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = fileName;
+            link.click();
+            URL.revokeObjectURL(link.href);
+            this.showToast(`ส่งออกไฟล์ CSV '${fileName}' สำเร็จ`);
+        },
+
+        buildTransferSummaryHtml(context) {
+            const { transferData } = context;
+            const { filteredTransferSales, sellerName, startDate, endDate, summaryTimestamp } = transferData;
+            
+            const formatCurrency = (num) => this.formatNumberSmart(num);
+            const formatDate = (dateStr) => this.formatThaiDateShortYear(dateStr);
+            
+            let totalTransfer = 0;
+            let transferRows = '';
+            filteredTransferSales.forEach(s => {
+                totalTransfer += s.total;
+                const itemsList = s.items.map(item => { 
+                    const product = this.data.products.find(p => p.id === item.productId); 
+                    const unit = product ? product.unit : 'หน่วย'; 
+                    return `${item.name}(${this.formatNumberSmart(item.quantity)} ${unit})`; 
+                }).join(', ');
+                
+                transferRows += `<tr>
+                    <td data-label="วันที่">${formatDate(s.date)}</td>
+                    <td data-label="ผู้โอน">${s.transferorName || '-'}</td>
+                    <td data-label="ผู้ขาย">${s.sellerName || '-'}</td>
+                    <td data-label="รายการ">${itemsList}</td>
+                    <td data-label="ยอดเงิน (บาท)">${formatCurrency(s.total)}</td>
+                </tr>`;
+            });
+
+            const periodLine = `<p style="font-size:0.9em; color: #333; font-weight: bold; margin-bottom: 8px;">ช่วงเวลา: ${this.formatThaiDateFullYear(startDate)} ถึง ${this.formatThaiDateFullYear(endDate)}</p>`;
+            
+            return `
+                <div style="text-align:center;">
+                    <h2>สรุปรายการเงินโอนของ: ${sellerName}</h2>
+                    <p style="font-size:0.8em; color:#555; margin-bottom: 0;">สรุปเมื่อ: ${summaryTimestamp}</p>
+                    ${periodLine}
+                    <table class="transfer-details-table" style="margin-top: 15px;">
+                        <thead><tr><th>วันที่</th><th>ผู้โอน</th><th>ผู้ขาย</th><th>รายการ</th><th>ยอดเงิน (บาท)</th></tr></thead>
+                        <tbody>${transferRows}</tbody>
+                    </table>
+                    <p style="text-align:right; font-size:1.2em; font-weight:bold; margin-top:15px;">ยอดรวมเงินโอนทั้งหมด: ${formatCurrency(totalTransfer)} บาท</p>
+                </div>
+            `;
+        },
+
+        exportTransferSummaryToCsv(context) {
+            const { transferData, periodName } = context;
+            const { filteredTransferSales, sellerName, startDate, endDate, summaryTimestamp } = transferData;
+            let csvRows = [];
+            
+            const formatCurrency = (num) => this.formatNumberSmart(num);
+            const formatDate = (dateStr) => this.formatThaiDateShortYear(dateStr);
+            const periodString = `${this.formatThaiDateFullYear(startDate)} ถึง ${this.formatThaiDateFullYear(endDate)}`;
+
+            csvRows.push(['สรุปโดย:', this.currentUser.username]);
+            csvRows.push(['สรุปเมื่อ:', summaryTimestamp]);
+            csvRows.push([`สรุปรายการเงินโอนของ ${sellerName}:`, periodString]);
+            csvRows.push([]);
+
+            csvRows.push(['วันที่', 'ผู้โอน', 'ผู้ขาย', 'รายการสินค้า', 'ยอดเงิน (บาท)']);
+            
+            let totalTransfer = 0;
+            filteredTransferSales.forEach(s => {
+                totalTransfer += s.total;
+                const itemsList = s.items.map(item => { 
+                    const product = this.data.products.find(p => p.id === item.productId); 
+                    const unit = product ? product.unit : 'หน่วย'; 
+                    return `${item.name}(${this.formatNumberSmart(item.quantity)} ${unit})`; 
+                }).join('; ');
+                
+                csvRows.push([
+                    formatDate(s.date),
+                    s.transferorName || '-',
+                    s.sellerName || '-',
+                    itemsList,
+                    formatCurrency(s.total)
+                ]);
+            });
+
+            csvRows.push([]);
+            csvRows.push(['', '', '', 'ยอดรวมเงินโอนทั้งหมด (บาท)', formatCurrency(totalTransfer)]);
+
+            const csvContent = csvRows.map(row => row.map(field => `"${String(field).replace(/"/g, '""')}"`).join(',')).join("\n");
+            const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+            const fileName = `Transfer_Summary_${periodName}_${new Date().getTime()}.csv`;
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = fileName;
+            link.click();
+            URL.revokeObjectURL(link.href);
+            this.showToast(`ส่งออกไฟล์ CSV '${fileName}' สำเร็จ`);
+        },
+
         generatePosSummaryData(startDate, endDate, sellerIdFilter = null, paymentTypesFilter = ['เงินสด', 'เงินโอน', 'เครดิต']) {
             const summary = { grandTotalSales: 0, grandTotalProfit: 0, grandTotalCash: 0, grandTotalCredit: 0, grandTotalTransfer: 0, salesCount: 0, sellerSummary: {}, totalSellingDays: 0 };
             
@@ -2689,15 +3020,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('product-id').value = '';
         },
         
-        editProduct(id) {
-            const product = this.data.products.find(p => p.id == id);
-            if(product) {
-                document.getElementById('product-id').value = product.id;
-                document.getElementById('product-name').value = product.name;
-                document.getElementById('product-unit').value = product.unit;
-                document.getElementById('product-name').focus();
-            }
-        },
+        editProduct(id) { const product = this.data.products.find(p => p.id == id); if(product) { document.getElementById('product-id').value = product.id; document.getElementById('product-name').value = product.name; document.getElementById('product-unit').value = product.unit; document.getElementById('product-name').focus(); } },
         deleteProduct(id) { if(confirm('คุณแน่ใจหรือไม่ว่าต้องการลบสินค้านี้? การกระทำนี้จะลบสินค้าออกจากระบบ แต่จะไม่ลบประวัติการขายหรือการนำเข้าที่เกี่ยวข้อง')) { this.data.products = this.data.products.filter(p => p.id != id); this.saveData(); this.renderProductTable(); } },
         
         renderStockIn() { 
@@ -3292,6 +3615,66 @@ document.addEventListener('DOMContentLoaded', () => {
             
             <div class="collapsible-bar seller-only" data-target="seller-summary-content"><span>รายงานสรุป (สำหรับผู้ใช้ปัจจุบัน)</span><span class="arrow">▶</span></div>
             <div id="seller-summary-content" class="collapsible-content seller-only"><div style="text-align:center;"><div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;"><button id="my-summary-today-btn" style="background-color: var(--warning-color);">สรุปยอดขายวันนี้</button><button id="my-summary-all-btn" style="background-color: #673ab7;">สรุปทั้งหมดของฉัน</button></div><div class="summary-form-inline" style="margin-top: 15px; justify-content: center; flex-direction: column; gap:10px; align-items: stretch;"><label>เลือกวันที่: <input type="date" id="my-summary-date" style="width:100%;"></label><button id="my-summary-by-day-btn" style="background-color: #03a9f4;">สรุปยอดขายวันที่เลือก</button></div></div></div>
+
+            <!-- START: NEW SELLER DETAILED REPORT SECTION -->
+            <div class="collapsible-bar seller-only" data-target="seller-detailed-report-content" style="background-color: #ED01ED;"><span>แจกแจงรายละเอียดการขาย</span><span class="arrow">▶</span></div>
+            <div id="seller-detailed-report-content" class="collapsible-content seller-only">
+                <form id="seller-detailed-report-form" class="summary-section" style="display: grid; grid-template-columns: 1fr; gap: 20px; max-width: 800px; margin: auto;">
+                    <div>
+                        <h4 style="text-align: left; margin-bottom: 5px; padding-left: 10px;">1. เลือกประเภทการชำระ</h4>
+                        <div id="seller-report-payment-types" style="display: flex; gap: 20px; flex-wrap: wrap; padding: 10px; background-color: #eef5ff; border-radius: 10px; justify-content: center;">
+                            <label style="font-weight: normal; cursor: pointer;"><input type="checkbox" value="เงินสด" checked> เงินสด</label>
+                            <label style="font-weight: normal; cursor: pointer;"><input type="checkbox" value="เงินโอน" checked> เงินโอน</label>
+                            <label style="font-weight: normal; cursor: pointer;"><input type="checkbox" value="เครดิต" checked> เครดิต</label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 style="text-align: left; margin-bottom: 5px; padding-left: 10px;">2. เลือกช่วงเวลา</h4>
+                        <div class="summary-form-inline" style="justify-content: space-around;">
+                            <label style="font-weight: normal;">จากวันที่: <input type="date" id="seller-report-start-date" required></label>
+                            <label style="font-weight: normal;">ถึงวันที่: <input type="date" id="seller-report-end-date" required></label>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="success" style="width: 100%; max-width: 400px; padding: 15px; font-size: 1.2em;">3. สร้างรายงาน</button>
+                    </div>
+                </form>
+            </div>
+            <!-- END: NEW SELLER DETAILED REPORT SECTION -->
+
+            <!-- START: NEW SELLER CREDIT REPORT SECTION -->
+            <div class="collapsible-bar seller-only" data-target="seller-credit-report-content" style="background-color: #d32f2f;"><span>สรุปข้อมูลลูกหนี้ (เครดิต)</span><span class="arrow">▶</span></div>
+            <div id="seller-credit-report-content" class="collapsible-content seller-only">
+                <form id="seller-credit-report-form" class="summary-section" style="padding: 10px; margin: 0 auto; border: none;">
+                    <h4 style="text-align: center; margin-top:0;">เลือกช่วงเวลาที่ต้องการสรุป</h4>
+                    <div class="summary-form-inline" style="justify-content: space-around;">
+                        <label style="font-weight: normal;">จากวันที่: <input type="date" id="seller-credit-start-date" required></label>
+                        <label style="font-weight: normal;">ถึงวันที่: <input type="date" id="seller-credit-end-date" required></label>
+                    </div>
+                    <div class="form-actions" style="margin-top: 15px;">
+                        <button type="submit" class="danger" style="width: 100%; max-width: 400px;">สร้างรายงานลูกหนี้</button>
+                    </div>
+                </form>
+            </div>
+            <!-- END: NEW SELLER CREDIT REPORT SECTION -->
+
+            <!-- START: NEW SELLER TRANSFER REPORT SECTION -->
+            <div class="collapsible-bar seller-only" data-target="seller-transfer-report-content" style="background-color: #1976d2;"><span>สรุปข้อมูลเงินโอน</span><span class="arrow">▶</span></div>
+            <div id="seller-transfer-report-content" class="collapsible-content seller-only">
+                <form id="seller-transfer-report-form" class="summary-section" style="padding: 10px; margin: 0 auto; border: none;">
+                    <h4 style="text-align: center; margin-top:0;">เลือกช่วงเวลาที่ต้องการสรุป</h4>
+                    <div class="summary-form-inline" style="justify-content: space-around;">
+                        <label style="font-weight: normal;">จากวันที่: <input type="date" id="seller-transfer-start-date" required></label>
+                        <label style="font-weight: normal;">ถึงวันที่: <input type="date" id="seller-transfer-end-date" required></label>
+                    </div>
+                    <div class="form-actions" style="margin-top: 15px;">
+                        <button type="submit" style="background-color: #007bff; width: 100%; max-width: 400px;">สร้างรายงานเงินโอน</button>
+                    </div>
+                </form>
+            </div>
+            <!-- END: NEW SELLER TRANSFER REPORT SECTION -->
             
             <div class="collapsible-bar seller-only active" data-target="seller-sales-history-container"><span>ค้นหารายการขาย</span><span class="arrow" style="transform: rotate(90deg);">▶</span></div>
             <div id="seller-sales-history-container" class="collapsible-content seller-only active">
@@ -3331,6 +3714,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (e.target.id === 'user-form') { e.preventDefault(); this.saveUser(e); }
                 if (e.target.id === 'seller-sales-filter-form') { e.preventDefault(); this.renderSellerSalesHistoryWithFilter(); }
                 if (e.target.id === 'admin-summary-form') { e.preventDefault(); this.runAdminSummary(); }
+                if (e.target.id === 'seller-detailed-report-form') { e.preventDefault(); this.runSellerDetailedReport(); }
+                if (e.target.id === 'seller-credit-report-form') { e.preventDefault(); this.runSellerCreditSummary(); }
+                if (e.target.id === 'seller-transfer-report-form') { e.preventDefault(); this.runSellerTransferSummary(); }
             }); 
             mainApp.addEventListener('click', (e) => { 
                 if (e.target.id === 'process-sale-btn') this.processSale(); 
