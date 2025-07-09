@@ -2326,7 +2326,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             if (payload) { // For editing a sale
-                this.editingSaleContext = { sellerId: payload.sellerId, sellerName: payload.sellerName };
+                // START: MODIFIED CODE
+                this.editingSaleContext = { 
+                    sellerId: payload.sellerId, 
+                    sellerName: payload.sellerName,
+                    storeId: payload.storeId,
+                    storeName: payload.storeName
+                };
+                // END: MODIFIED CODE
                 this.cart = [];
                 payload.items.forEach(item => {
                     const product = this.data.products.find(p => p.id === item.productId);
@@ -2486,8 +2493,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     return { productId: item.id, name: item.name, quantity: item.quantity, price: item.sellingPrice, cost: item.costPrice, isSpecialPrice: item.isSpecialPrice, originalPrice: item.originalPrice };
                 });
                 
-                const sellerInfo = this.editingSaleContext ? { id: this.editingSaleContext.sellerId, name: this.editingSaleContext.sellerName } : { id: this.currentUser.id, name: this.currentUser.username };
-                const store = this.data.stores.find(s => s.id === this.currentUser.storeId);
+                // START: MODIFIED CODE
+                const sellerAndStoreInfo = {};
+                if (this.editingSaleContext) {
+                    // Editing an existing sale. Preserve original seller and store data.
+                    sellerAndStoreInfo.sellerId = this.editingSaleContext.sellerId;
+                    sellerAndStoreInfo.sellerName = this.editingSaleContext.sellerName;
+                    sellerAndStoreInfo.storeId = this.editingSaleContext.storeId;
+                    sellerAndStoreInfo.storeName = this.editingSaleContext.storeName;
+                } else {
+                    // Creating a new sale. Use current user's data.
+                    sellerAndStoreInfo.sellerId = this.currentUser.id;
+                    sellerAndStoreInfo.sellerName = this.currentUser.username;
+                    const store = this.data.stores.find(s => s.id === this.currentUser.storeId);
+                    sellerAndStoreInfo.storeId = store ? store.id : null;
+                    sellerAndStoreInfo.storeName = store ? store.name : null;
+                }
 
                 const saleRecord = {
                     id: Date.now(),
@@ -2499,11 +2520,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     buyerName: buyerName,
                     creditDueDate: creditDueDateValue,
                     transferorName: transferorName,
-                    sellerId: sellerInfo.id,
-                    sellerName: sellerInfo.name,
-                    storeId: store ? store.id : null,
-                    storeName: store ? store.name : null
+                    sellerId: sellerAndStoreInfo.sellerId,
+                    sellerName: sellerAndStoreInfo.sellerName,
+                    storeId: sellerAndStoreInfo.storeId,
+                    storeName: sellerAndStoreInfo.storeName
                 };
+                // END: MODIFIED CODE
                 
                 this.data.sales.push(saleRecord);
                 this.saveData();
