@@ -1345,37 +1345,6 @@ document.addEventListener('DOMContentLoaded', () => {
             this.openSummaryOutputModal();
         },
         
-        runSellerDetailedReport() {
-            const startDateStr = document.getElementById('seller-report-start-date').value;
-            const endDateStr = document.getElementById('seller-report-end-date').value;
-            const selectedPaymentTypes = Array.from(document.querySelectorAll('#seller-report-payment-types input:checked')).map(cb => cb.value);
-
-            if (!startDateStr || !endDateStr) { this.showToast("กรุณาเลือกวันที่เริ่มต้นและสิ้นสุด", "error"); return; }
-            const startDate = new Date(startDateStr); startDate.setHours(0, 0, 0, 0);
-            const endDate = new Date(endDateStr); endDate.setHours(23, 59, 59, 999);
-            if (startDate > endDate) { this.showToast("วันที่เริ่มต้นต้องมาก่อนวันที่สิ้นสุด", "error"); return; }
-            if (selectedPaymentTypes.length === 0) { this.showToast("กรุณาเลือกประเภทการชำระเงินอย่างน้อย 1 อย่าง", "error"); return; }
-
-            const filteredSales = this.filterSalesData(startDate, endDate, this.currentUser.id, selectedPaymentTypes);
-
-            if (filteredSales.length === 0) { this.showToast("ไม่พบข้อมูลการขายตามเงื่อนไขที่กำหนด"); return; }
-
-            const thaiDateString = `${this.formatThaiDateFullYear(startDate)} ถึง ${this.formatThaiDateFullYear(endDate)}`;
-            const title = `รายงานการขายของ ${this.currentUser.username}`;
-            const periodName = `Seller_Detailed_Report_${this.currentUser.username}_${startDateStr}_to_${endDateStr}`;
-
-            this.summaryContext = {
-                type: 'detailed_list',
-                filteredSales,
-                title,
-                thaiDateString,
-                periodName,
-                sellerId: this.currentUser.id
-            };
-
-            this.openSummaryOutputModal();
-        },
-
         _runSummary(startDate, endDate, title, periodName, sellerId = null) { 
             const summaryResult = this.generatePosSummaryData(startDate, endDate, sellerId); 
             if (summaryResult.salesCount === 0) { this.showToast("ไม่พบข้อมูลการขายในช่วงที่กำหนด"); return; } 
@@ -3323,34 +3292,6 @@ document.addEventListener('DOMContentLoaded', () => {
             
             <div class="collapsible-bar seller-only" data-target="seller-summary-content"><span>รายงานสรุป (สำหรับผู้ใช้ปัจจุบัน)</span><span class="arrow">▶</span></div>
             <div id="seller-summary-content" class="collapsible-content seller-only"><div style="text-align:center;"><div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;"><button id="my-summary-today-btn" style="background-color: var(--warning-color);">สรุปยอดขายวันนี้</button><button id="my-summary-all-btn" style="background-color: #673ab7;">สรุปทั้งหมดของฉัน</button></div><div class="summary-form-inline" style="margin-top: 15px; justify-content: center; flex-direction: column; gap:10px; align-items: stretch;"><label>เลือกวันที่: <input type="date" id="my-summary-date" style="width:100%;"></label><button id="my-summary-by-day-btn" style="background-color: #03a9f4;">สรุปยอดขายวันที่เลือก</button></div></div></div>
-
-            <!-- START: NEW SELLER DETAILED REPORT SECTION -->
-            <div class="collapsible-bar seller-only" data-target="seller-detailed-report-content" style="background-color: #ED01ED;"><span>แจกแจงรายละเอียดการขาย</span><span class="arrow">▶</span></div>
-            <div id="seller-detailed-report-content" class="collapsible-content seller-only">
-                <form id="seller-detailed-report-form" class="summary-section" style="display: grid; grid-template-columns: 1fr; gap: 20px; max-width: 800px; margin: auto;">
-                    <div>
-                        <h4 style="text-align: left; margin-bottom: 5px; padding-left: 10px;">1. เลือกประเภทการชำระ</h4>
-                        <div id="seller-report-payment-types" style="display: flex; gap: 20px; flex-wrap: wrap; padding: 10px; background-color: #eef5ff; border-radius: 10px; justify-content: center;">
-                            <label style="font-weight: normal; cursor: pointer;"><input type="checkbox" value="เงินสด" checked> เงินสด</label>
-                            <label style="font-weight: normal; cursor: pointer;"><input type="checkbox" value="เงินโอน" checked> เงินโอน</label>
-                            <label style="font-weight: normal; cursor: pointer;"><input type="checkbox" value="เครดิต" checked> เครดิต</label>
-                        </div>
-                    </div>
-
-                    <div>
-                        <h4 style="text-align: left; margin-bottom: 5px; padding-left: 10px;">2. เลือกช่วงเวลา</h4>
-                        <div class="summary-form-inline" style="justify-content: space-around;">
-                            <label style="font-weight: normal;">จากวันที่: <input type="date" id="seller-report-start-date" required></label>
-                            <label style="font-weight: normal;">ถึงวันที่: <input type="date" id="seller-report-end-date" required></label>
-                        </div>
-                    </div>
-
-                    <div class="form-actions">
-                        <button type="submit" class="success" style="width: 100%; max-width: 400px; padding: 15px; font-size: 1.2em;">3. สร้างรายงาน</button>
-                    </div>
-                </form>
-            </div>
-            <!-- END: NEW SELLER DETAILED REPORT SECTION -->
             
             <div class="collapsible-bar seller-only active" data-target="seller-sales-history-container"><span>ค้นหารายการขาย</span><span class="arrow" style="transform: rotate(90deg);">▶</span></div>
             <div id="seller-sales-history-container" class="collapsible-content seller-only active">
@@ -3390,7 +3331,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (e.target.id === 'user-form') { e.preventDefault(); this.saveUser(e); }
                 if (e.target.id === 'seller-sales-filter-form') { e.preventDefault(); this.renderSellerSalesHistoryWithFilter(); }
                 if (e.target.id === 'admin-summary-form') { e.preventDefault(); this.runAdminSummary(); }
-                if (e.target.id === 'seller-detailed-report-form') { e.preventDefault(); this.runSellerDetailedReport(); } // NEW
             }); 
             mainApp.addEventListener('click', (e) => { 
                 if (e.target.id === 'process-sale-btn') this.processSale(); 
