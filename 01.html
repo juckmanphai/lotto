@@ -1094,7 +1094,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const App = {
         currentUser: null,
-        data: { users: [], products: [], sales: [], stockIns: [], stockOuts: [], stores: [] },
+        data: { users: [], products: [], sales: [], stockIns: [], stockOuts: [], stores: [], backupPassword: null },
         cart: [],
         summaryContext: {},
         editingSaleContext: null,
@@ -1160,6 +1160,107 @@ document.addEventListener('DOMContentLoaded', () => {
             return `วันที่ ${dateString} เวลา ${timeString} น.`;
         },
 
+        // --- START: NEW CRYPTO HELPER FUNCTIONS ---
+        // Helper: Convert ArrayBuffer to Base64 string
+        arrayBufferToBase64(buffer) {
+            let binary = '';
+            const bytes = new Uint8Array(buffer);
+            const len = bytes.byteLength;
+            for (let i = 0; i < len; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return window.btoa(binary);
+        },
+
+        // Helper: Convert Base64 string to ArrayBuffer
+        base64ToArrayBuffer(base64) {
+            const binary_string = window.atob(base64);
+            const len = binary_string.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binary_string.charCodeAt(i);
+            }
+            return bytes.buffer;
+        },
+
+        // Derives a key from a password using PBKDF2
+        async deriveKey(password, salt) {
+            const enc = new TextEncoder();
+            const keyMaterial = await window.crypto.subtle.importKey(
+                'raw',
+                enc.encode(password),
+                { name: 'PBKDF2' },
+                false,
+                ['deriveKey']
+            );
+            return window.crypto.subtle.deriveKey(
+                {
+                    "name": 'PBKDF2',
+                    salt: salt,
+                    "iterations": 100000,
+                    "hash": 'SHA-256'
+                },
+                keyMaterial,
+                { "name": 'AES-GCM', "length": 256 },
+                true,
+                [ "encrypt", "decrypt" ]
+            );
+        },
+
+        // Encrypts data with a password
+        async encryptData(dataString, password) {
+            const salt = window.crypto.getRandomValues(new Uint8Array(16));
+            const iv = window.crypto.getRandomValues(new Uint8Array(12));
+            const key = await this.deriveKey(password, salt);
+
+            const enc = new TextEncoder();
+            const encodedData = enc.encode(dataString);
+
+            const encryptedContent = await window.crypto.subtle.encrypt(
+                {
+                    name: 'AES-GCM',
+                    iv: iv
+                },
+                key,
+                encodedData
+            );
+
+            return {
+                isEncrypted: true,
+                salt: this.arrayBufferToBase64(salt),
+                iv: this.arrayBufferToBase64(iv),
+                encryptedData: this.arrayBufferToBase64(encryptedContent)
+            };
+        },
+
+        // Decrypts data with a password
+        async decryptData(encryptedPayload, password) {
+            try {
+                const salt = this.base64ToArrayBuffer(encryptedPayload.salt);
+                const iv = this.base64ToArrayBuffer(encryptedPayload.iv);
+                const data = this.base64ToArrayBuffer(encryptedPayload.encryptedData);
+                
+                const key = await this.deriveKey(password, salt);
+
+                const decryptedContent = await window.crypto.subtle.decrypt(
+                    {
+                        name: 'AES-GCM',
+                        iv: iv
+                    },
+                    key,
+                    data
+                );
+
+                const dec = new TextDecoder();
+                return dec.decode(decryptedContent);
+            } catch (e) {
+                console.error("Decryption failed:", e);
+                // This will typically fail if the password is wrong
+                return null;
+            }
+        },
+        // --- END: NEW CRYPTO HELPER FUNCTIONS ---
+
         toggleSection(sectionId) {
             const currentlyOpen = document.querySelector('.section-content.active');
             if (currentlyOpen && currentlyOpen.id !== sectionId) {
@@ -1203,6 +1304,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     case 'page-data':
                         if (this.currentUser.role === 'seller') {
                             this.renderSellerSalesHistoryWithFilter();
+                        } else if (this.currentUser.role === 'admin') {
+                            this.renderBackupPasswordStatus();
                         }
                         break;
                 }
@@ -1239,6 +1342,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = localStorage.getItem('posData'); 
             if (data) { 
                 this.data = JSON.parse(data); 
+                if (typeof this.data.backupPassword === 'undefined') {
+                    this.data.backupPassword = null;
+                }
                 if (!this.data.stores) { this.data.stores = []; } 
                 if (!this.data.stockOuts) { this.data.stockOuts = []; } 
                 if (this.data.sales && this.data.sales.length > 0) { 
@@ -1263,6 +1369,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }); 
             } else { 
                 this.data.users.push({ id: Date.now(), username: 'admin', password: '123', role: 'admin' }); 
+                this.data.backupPassword = null;
                 this.saveData(); 
             } 
         },
@@ -2471,14 +2578,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             if (payload) { // For editing a sale
-                // START: MODIFIED CODE
                 this.editingSaleContext = { 
                     sellerId: payload.sellerId, 
                     sellerName: payload.sellerName,
                     storeId: payload.storeId,
                     storeName: payload.storeName
                 };
-                // END: MODIFIED CODE
                 this.cart = [];
                 payload.items.forEach(item => {
                     const product = this.data.products.find(p => p.id === item.productId);
@@ -2638,16 +2743,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     return { productId: item.id, name: item.name, quantity: item.quantity, price: item.sellingPrice, cost: item.costPrice, isSpecialPrice: item.isSpecialPrice, originalPrice: item.originalPrice };
                 });
                 
-                // START: MODIFIED CODE
                 const sellerAndStoreInfo = {};
                 if (this.editingSaleContext) {
-                    // Editing an existing sale. Preserve original seller and store data.
                     sellerAndStoreInfo.sellerId = this.editingSaleContext.sellerId;
                     sellerAndStoreInfo.sellerName = this.editingSaleContext.sellerName;
                     sellerAndStoreInfo.storeId = this.editingSaleContext.storeId;
                     sellerAndStoreInfo.storeName = this.editingSaleContext.storeName;
                 } else {
-                    // Creating a new sale. Use current user's data.
                     sellerAndStoreInfo.sellerId = this.currentUser.id;
                     sellerAndStoreInfo.sellerName = this.currentUser.username;
                     const store = this.data.stores.find(s => s.id === this.currentUser.storeId);
@@ -2670,7 +2772,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     storeId: sellerAndStoreInfo.storeId,
                     storeName: sellerAndStoreInfo.storeName
                 };
-                // END: MODIFIED CODE
                 
                 this.data.sales.push(saleRecord);
                 this.saveData();
@@ -2864,7 +2965,29 @@ document.addEventListener('DOMContentLoaded', () => {
         updateSpecialPriceInfo() { const productId = document.getElementById('pos-product').value; const infoSpan = document.getElementById('current-price-info'); if (infoSpan) { if (productId) { const product = this.data.products.find(p => p.id == productId); infoSpan.textContent = `ราคาปกติ: ${this.formatNumberSmart(product.sellingPrice)} บาท`; } else { infoSpan.textContent = ''; } } },
         manualSaveToBrowser() { try { this.saveData(); this.showToast('✓ บันทึกข้อมูลลงในเบราว์เซอร์แล้ว'); } catch (error) { console.error("บันทึกข้อมูลไม่สำเร็จ:", error); this.showToast("⚠️ เกิดข้อผิดพลาดในการบันทึกข้อมูล", "error"); } },
         
-        saveBackupToFile() {
+        saveBackupPassword(e) {
+            e.preventDefault();
+            const newPassword = document.getElementById('backup-password').value;
+            this.data.backupPassword = newPassword.trim() || null;
+            this.saveData();
+            this.showToast('บันทึกรหัสผ่านสำหรับไฟล์สำรองเรียบร้อยแล้ว');
+            document.getElementById('backup-password').value = '';
+            this.renderBackupPasswordStatus();
+        },
+
+        renderBackupPasswordStatus() {
+            const statusEl = document.getElementById('password-status');
+            if (!statusEl) return;
+            if (this.data.backupPassword) {
+                statusEl.textContent = 'สถานะ: มีการตั้งรหัสผ่านแล้ว';
+                statusEl.style.color = 'var(--success-color)';
+            } else {
+                statusEl.textContent = 'สถานะ: ยังไม่มีการตั้งรหัสผ่าน (ไฟล์สำรองของแอดมินจะไม่ถูกเข้ารหัส)';
+                statusEl.style.color = 'var(--warning-color)';
+            }
+        },
+
+        async saveBackupToFile() {
             const now = new Date();
             const year = now.getFullYear();
             const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -2872,11 +2995,32 @@ document.addEventListener('DOMContentLoaded', () => {
             const hours = String(now.getHours()).padStart(2, '0');
             const minutes = String(now.getMinutes()).padStart(2, '0');
             const dateTimeString = `${year}${month}${day}_${hours}${minutes}`;
-            const sellerUsername = this.currentUser.username;
-            const fullFileName = `pos_backup_${sellerUsername}_${dateTimeString}.json`;
+            const currentUser = this.currentUser.username;
+            const fullFileName = `pos_backup_${currentUser}_${dateTimeString}.json`;
 
-            const dataToSave = this.data;
-            const blob = new Blob([JSON.stringify(dataToSave, null, 2)], { type: 'application/json' });
+            let dataToSaveString;
+            const backupPassword = this.data.backupPassword;
+
+            // NEW LOGIC: If a password is set by the admin, ALL users' backups will be encrypted.
+            if (backupPassword) {
+                try {
+                    this.showToast('กำลังเข้ารหัสข้อมูลด้วยรหัสผ่านของระบบ...', 'warning');
+                    const originalDataString = JSON.stringify(this.data, null, 2);
+                    const encryptedObject = await this.encryptData(originalDataString, backupPassword);
+                    dataToSaveString = JSON.stringify(encryptedObject, null, 2);
+                    this.showToast('เข้ารหัสข้อมูลสำเร็จ!', 'success');
+                } catch (error) {
+                    console.error("Encryption failed:", error);
+                    this.showToast("เกิดข้อผิดพลาดในการเข้ารหัสข้อมูล", "error");
+                    return;
+                }
+            } else {
+                // If no password is set by the admin, save as plain text for all users.
+                this.showToast('บันทึกข้อมูลแบบไม่เข้ารหัส เนื่องจากแอดมินยังไม่ได้ตั้งรหัสผ่านของระบบ', 'warning');
+                dataToSaveString = JSON.stringify(this.data, null, 2);
+            }
+
+            const blob = new Blob([dataToSaveString], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
 
             const a = document.createElement('a');
@@ -2971,21 +3115,46 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         },
 
-        promptLoadFromFile(event) {
+        async promptLoadFromFile(event) {
             const file = event.target.files[0];
             if (!file) return;
 
             const reader = new FileReader();
-            reader.onload = (e) => {
+            reader.onload = async (e) => {
                 try {
                     const content = e.target.result;
-                    const importedData = JSON.parse(content);
+                    let importedData = JSON.parse(content);
+                    let finalDataToMerge = null;
 
-                    if (importedData && typeof importedData === 'object' && 'users' in importedData && 'products' in importedData && 'sales' in importedData) {
-                        const confirmationMessage = "คุณต้องการรวมข้อมูลจากไฟล์นี้เข้ากับข้อมูลปัจจุบันหรือไม่?\n\n- ข้อมูลที่ซ้ำกันจะถูกทับด้วยข้อมูลจากไฟล์\n- ข้อมูลใหม่จะถูกเพิ่มเข้ามา\n- **สต็อกสินค้าจะถูกคำนวณใหม่ทั้งหมด** จากประวัติการนำเข้าและประวัติการขายเพื่อให้ถูกต้องที่สุด\n\nยืนยันเพื่อดำเนินการต่อ?";
+                    if (importedData && importedData.isEncrypted === true) {
+                        const adminPassword = this.data.backupPassword;
+                        if (!adminPassword) {
+                            this.showToast("ไฟล์นี้ถูกเข้ารหัส แต่คุณยังไม่ได้ตั้งรหัสผ่านในระบบ", "error");
+                            alert("โปรดไปที่หน้า 'จัดการข้อมูล' และตั้งรหัสผ่านสำหรับไฟล์สำรองให้ตรงกับไฟล์ที่ต้องการนำเข้า แล้วลองอีกครั้ง");
+                            return;
+                        }
+
+                        this.showToast('กำลังถอดรหัสด้วยรหัสผ่านที่บันทึกไว้...', 'warning');
+                        const decryptedString = await this.decryptData(importedData, adminPassword);
+
+                        if (decryptedString) {
+                            finalDataToMerge = JSON.parse(decryptedString);
+                            this.showToast('ถอดรหัสสำเร็จ!', 'success');
+                        } else {
+                            this.showToast("ถอดรหัสล้มเหลว! รหัสผ่านในระบบอาจไม่ตรงกับไฟล์", "error");
+                            alert("รหัสผ่านที่ตั้งไว้ในระบบไม่สามารถใช้ถอดรหัสไฟล์นี้ได้ โปรดตรวจสอบรหัสผ่านในหน้า 'จัดการข้อมูล' แล้วลองอีกครั้ง");
+                            return;
+                        }
+                    } else {
+                        // File is not encrypted, use it directly
+                        finalDataToMerge = importedData;
+                    }
+
+                    if (finalDataToMerge && typeof finalDataToMerge === 'object' && 'users' in finalDataToMerge) {
+                        const confirmationMessage = "คุณต้องการรวมข้อมูลจากไฟล์นี้เข้ากับข้อมูลปัจจุบันหรือไม่?\n\n- ข้อมูลที่ซ้ำกันจะถูกทับด้วยข้อมูลจากไฟล์\n- ข้อมูลใหม่จะถูกเพิ่มเข้ามา\n- **สต็อกสินค้าจะถูกคำนวณใหม่ทั้งหมด**\n\nยืนยันเพื่อดำเนินการต่อ?";
                         
                         if (confirm(confirmationMessage)) {
-                            this.mergeData(importedData);
+                            this.mergeData(finalDataToMerge);
                             this.recalculateAllStock();
                             this.saveData();
                             this.showToast('รวมข้อมูลและคำนวณสต็อกใหม่สำเร็จ! กำลังรีโหลด...', 'success');
@@ -3778,6 +3947,18 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('page-data').innerHTML = `<h2>จัดการข้อมูล</h2>
             <!-- Admin Sections -->
             <div class="data-management-section admin-only data-restore-section"><h3>โหลดข้อมูลจากไฟล์ (Restore)</h3><p style="color: var(--danger-color);"><b>คำเตือน:</b> การโหลดข้อมูลจากไฟล์จะรวมข้อมูลเข้ากับข้อมูลปัจจุบัน ข้อมูลที่ซ้ำกันจะถูกเขียนทับด้วยข้อมูลจากไฟล์!</p><input type="file" id="data-file-input" style="display: none;" accept=".json,application/json"><button type="button" id="load-from-file-btn" style="background-color: #E97132;">เลือกไฟล์สำรอง (.json)</button></div>
+            <div class="data-management-section admin-only">
+                <h3>ตั้งรหัสผ่านสำหรับไฟล์สำรอง</h3>
+                <p>รหัสผ่านนี้จะใช้เข้ารหัสไฟล์สำรองข้อมูลที่สร้างโดยแอดมินโดยอัตโนมัติ</p>
+                <form id="backup-password-form" style="max-width: 400px; display: grid; grid-template-columns: 1fr; gap: 10px;">
+                    <label for="backup-password" style="text-align:left;">รหัสผ่านใหม่ (เว้นว่างเพื่อลบ):</label>
+                    <input type="password" id="backup-password" placeholder="พิมพ์รหัสผ่านที่นี่">
+                    <div class="form-actions" style="justify-content: center;">
+                        <button type="submit" class="success">บันทึกรหัสผ่าน</button>
+                    </div>
+                </form>
+                <p id="password-status" style="font-weight: bold; margin-top: 15px;"></p>
+            </div>
             <div class="data-management-section admin-only"><h3>สำรองข้อมูล (Backup)</h3><p>สำรองข้อมูลทั้งหมด (ผู้ใช้, สินค้า, ประวัติการขาย) ลงในไฟล์ JSON เพื่อเก็บไว้หรือย้ายไปยังเครื่องอื่น</p><button id="save-to-file-btn" class="success">บันทึกข้อมูลทั้งหมดลงไฟล์</button><button id="save-to-browser-btn" style="background-color: #007bff;">บันทึกข้อมูลปัจจุบันลงในเบราว์เซอร์</button></div>
             <div class="data-management-section admin-only" style="border-color: var(--danger-color);"><h3 style="color: var(--danger-color);">รีเซ็ตข้อมูล (*** การกระทำนี้ไม่สามารถย้อนกลับได้ ***)</h3><p>เลือกเพื่อล้างข้อมูลเฉพาะส่วนที่ต้องการ</p><button id="open-reset-modal-btn" class="danger">เปิดหน้าต่างรีเซ็ตข้อมูล</button></div>
             <div class="collapsible-bar admin-only" data-target="admin-stock-report-content" style="background-color: #00B050;"><span>รายงานสต็อกสินค้า</span><span class="arrow">▶</span></div>
@@ -3897,6 +4078,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (e.target.id === 'seller-detailed-report-form') { e.preventDefault(); this.runSellerDetailedReport(); }
                 if (e.target.id === 'seller-credit-report-form') { e.preventDefault(); this.runSellerCreditSummary(); }
                 if (e.target.id === 'seller-transfer-report-form') { e.preventDefault(); this.runSellerTransferSummary(); }
+                if (e.target.id === 'backup-password-form') { e.preventDefault(); this.saveBackupPassword(e); }
             }); 
             mainApp.addEventListener('click', (e) => { 
                 if (e.target.id === 'process-sale-btn') this.processSale(); 
