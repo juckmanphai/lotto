@@ -982,6 +982,13 @@
                 <label for="password">รหัสผ่าน:</label>
                 <input type="password" id="password" required>
                 
+                <div style="grid-column: 1 / -1; text-align: left; margin: 0 0 10px 0;">
+                    <label style="font-weight: normal; cursor: pointer;">
+                        <input type="checkbox" id="show-password-login">
+                        แสดงรหัสผ่าน
+                    </label>
+                </div>
+                
                 <div style="grid-column: 1 / -1; text-align: left; margin: 5px 0 10px 0;">
                     <label style="font-weight: normal; cursor: pointer;">
                         <input type="checkbox" id="remember-me">
@@ -1161,104 +1168,11 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         // --- START: NEW CRYPTO HELPER FUNCTIONS ---
-        // Helper: Convert ArrayBuffer to Base64 string
-        arrayBufferToBase64(buffer) {
-            let binary = '';
-            const bytes = new Uint8Array(buffer);
-            const len = bytes.byteLength;
-            for (let i = 0; i < len; i++) {
-                binary += String.fromCharCode(bytes[i]);
-            }
-            return window.btoa(binary);
-        },
-
-        // Helper: Convert Base64 string to ArrayBuffer
-        base64ToArrayBuffer(base64) {
-            const binary_string = window.atob(base64);
-            const len = binary_string.length;
-            const bytes = new Uint8Array(len);
-            for (let i = 0; i < len; i++) {
-                bytes[i] = binary_string.charCodeAt(i);
-            }
-            return bytes.buffer;
-        },
-
-        // Derives a key from a password using PBKDF2
-        async deriveKey(password, salt) {
-            const enc = new TextEncoder();
-            const keyMaterial = await window.crypto.subtle.importKey(
-                'raw',
-                enc.encode(password),
-                { name: 'PBKDF2' },
-                false,
-                ['deriveKey']
-            );
-            return window.crypto.subtle.deriveKey(
-                {
-                    "name": 'PBKDF2',
-                    salt: salt,
-                    "iterations": 100000,
-                    "hash": 'SHA-256'
-                },
-                keyMaterial,
-                { "name": 'AES-GCM', "length": 256 },
-                true,
-                [ "encrypt", "decrypt" ]
-            );
-        },
-
-        // Encrypts data with a password
-        async encryptData(dataString, password) {
-            const salt = window.crypto.getRandomValues(new Uint8Array(16));
-            const iv = window.crypto.getRandomValues(new Uint8Array(12));
-            const key = await this.deriveKey(password, salt);
-
-            const enc = new TextEncoder();
-            const encodedData = enc.encode(dataString);
-
-            const encryptedContent = await window.crypto.subtle.encrypt(
-                {
-                    name: 'AES-GCM',
-                    iv: iv
-                },
-                key,
-                encodedData
-            );
-
-            return {
-                isEncrypted: true,
-                salt: this.arrayBufferToBase64(salt),
-                iv: this.arrayBufferToBase64(iv),
-                encryptedData: this.arrayBufferToBase64(encryptedContent)
-            };
-        },
-
-        // Decrypts data with a password
-        async decryptData(encryptedPayload, password) {
-            try {
-                const salt = this.base64ToArrayBuffer(encryptedPayload.salt);
-                const iv = this.base64ToArrayBuffer(encryptedPayload.iv);
-                const data = this.base64ToArrayBuffer(encryptedPayload.encryptedData);
-                
-                const key = await this.deriveKey(password, salt);
-
-                const decryptedContent = await window.crypto.subtle.decrypt(
-                    {
-                        name: 'AES-GCM',
-                        iv: iv
-                    },
-                    key,
-                    data
-                );
-
-                const dec = new TextDecoder();
-                return dec.decode(decryptedContent);
-            } catch (e) {
-                console.error("Decryption failed:", e);
-                // This will typically fail if the password is wrong
-                return null;
-            }
-        },
+        arrayBufferToBase64(buffer) { let binary = ''; const bytes = new Uint8Array(buffer); const len = bytes.byteLength; for (let i = 0; i < len; i++) { binary += String.fromCharCode(bytes[i]); } return window.btoa(binary); },
+        base64ToArrayBuffer(base64) { const binary_string = window.atob(base64); const len = binary_string.length; const bytes = new Uint8Array(len); for (let i = 0; i < len; i++) { bytes[i] = binary_string.charCodeAt(i); } return bytes.buffer; },
+        async deriveKey(password, salt) { const enc = new TextEncoder(); const keyMaterial = await window.crypto.subtle.importKey('raw', enc.encode(password), { name: 'PBKDF2' }, false, ['deriveKey']); return window.crypto.subtle.deriveKey({ "name": 'PBKDF2', salt: salt, "iterations": 100000, "hash": 'SHA-256' }, keyMaterial, { "name": 'AES-GCM', "length": 256 }, true, [ "encrypt", "decrypt" ] ); },
+        async encryptData(dataString, password) { const salt = window.crypto.getRandomValues(new Uint8Array(16)); const iv = window.crypto.getRandomValues(new Uint8Array(12)); const key = await this.deriveKey(password, salt); const enc = new TextEncoder(); const encodedData = enc.encode(dataString); const encryptedContent = await window.crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, encodedData); return { isEncrypted: true, salt: this.arrayBufferToBase64(salt), iv: this.arrayBufferToBase64(iv), encryptedData: this.arrayBufferToBase64(encryptedContent) }; },
+        async decryptData(encryptedPayload, password) { try { const salt = this.base64ToArrayBuffer(encryptedPayload.salt); const iv = this.base64ToArrayBuffer(encryptedPayload.iv); const data = this.base64ToArrayBuffer(encryptedPayload.encryptedData); const key = await this.deriveKey(password, salt); const decryptedContent = await window.crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv }, key, data); const dec = new TextDecoder(); return dec.decode(decryptedContent); } catch (e) { console.error("Decryption failed:", e); return null; } },
         // --- END: NEW CRYPTO HELPER FUNCTIONS ---
 
         toggleSection(sectionId) {
@@ -2968,10 +2882,18 @@ document.addEventListener('DOMContentLoaded', () => {
         saveBackupPassword(e) {
             e.preventDefault();
             const newPassword = document.getElementById('backup-password').value;
+            const confirmPassword = document.getElementById('backup-password-confirm').value;
+
+            if (newPassword !== confirmPassword) {
+                this.showToast('รหัสผ่านไม่ตรงกัน กรุณากรอกใหม่อีกครั้ง', 'error');
+                return;
+            }
+
             this.data.backupPassword = newPassword.trim() || null;
             this.saveData();
             this.showToast('บันทึกรหัสผ่านสำหรับไฟล์สำรองเรียบร้อยแล้ว');
             document.getElementById('backup-password').value = '';
+            document.getElementById('backup-password-confirm').value = '';
             this.renderBackupPasswordStatus();
         },
 
@@ -3001,7 +2923,6 @@ document.addEventListener('DOMContentLoaded', () => {
             let dataToSaveString;
             const backupPassword = this.data.backupPassword;
 
-            // NEW LOGIC: If a password is set by the admin, ALL users' backups will be encrypted.
             if (backupPassword) {
                 try {
                     this.showToast('กำลังเข้ารหัสข้อมูลด้วยรหัสผ่านของระบบ...', 'warning');
@@ -3015,7 +2936,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
             } else {
-                // If no password is set by the admin, save as plain text for all users.
                 this.showToast('บันทึกข้อมูลแบบไม่เข้ารหัส เนื่องจากแอดมินยังไม่ได้ตั้งรหัสผ่านของระบบ', 'warning');
                 dataToSaveString = JSON.stringify(this.data, null, 2);
             }
@@ -3669,14 +3589,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const id = document.getElementById('user-id').value;
             const username = document.getElementById('user-username').value;
             const password = document.getElementById('user-password').value;
+            const confirmPassword = document.getElementById('user-password-confirm').value;
             const role = document.getElementById('user-role').value;
             const startDate = document.getElementById('user-sales-start-date').value;
             const endDate = document.getElementById('user-sales-end-date').value;
 
-            if (!username.trim()) {
-                this.showToast('กรุณากรอกชื่อผู้ใช้', 'error');
-                return;
-            }
+            if (!username.trim()) { this.showToast('กรุณากรอกชื่อผู้ใช้', 'error'); return; }
+            if (password !== confirmPassword) { this.showToast('รหัสผ่านไม่ตรงกัน', 'error'); return; }
 
             let assignedProductIds = [];
             let storeId = null;
@@ -3687,20 +3606,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const storeSelect = document.getElementById('user-store-select');
                 storeId = storeSelect ? storeSelect.value : null;
 
-                if (!storeId) {
-                    this.showToast('กรุณาระบุร้านค้าสำหรับผู้ขาย', 'error');
-                    return;
-                }
+                if (!storeId) { this.showToast('กรุณาระบุร้านค้าสำหรับผู้ขาย', 'error'); return; }
                 storeId = parseInt(storeId, 10); 
 
-                if (!startDate || !endDate) {
-                    this.showToast('กรุณากำหนดระยะเวลาการขายให้ครบถ้วน', 'error');
-                    return;
-                }
-                if (new Date(startDate) > new Date(endDate)) {
-                    this.showToast('วันที่เริ่มขายต้องมาก่อนหรือวันเดียวกับวันที่สิ้นสุด', 'error');
-                    return;
-                }
+                if (!startDate || !endDate) { this.showToast('กรุณากำหนดระยะเวลาการขายให้ครบถ้วน', 'error'); return; }
+                if (new Date(startDate) > new Date(endDate)) { this.showToast('วันที่เริ่มขายต้องมาก่อนหรือวันเดียวกับวันที่สิ้นสุด', 'error'); return; }
                 const checkboxes = document.querySelectorAll('#user-product-assignment input:checked');
                 assignedProductIds = Array.from(checkboxes).map(cb => parseInt(cb.value, 10));
 
@@ -3722,9 +3632,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const user = this.data.users.find(u => u.id == id);
                 if (user.username !== username) {
                     this.data.sales.forEach(sale => {
-                        if (sale.sellerId == id) {
-                            sale.sellerName = username;
-                        }
+                        if (sale.sellerId == id) { sale.sellerName = username; }
                     });
                 }
                 user.username = username;
@@ -3742,26 +3650,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     user.commissionOnCredit = commissionOnCredit;
                     user.visibleSalesDays = visibleSalesDays;
                 } else {
-                    delete user.assignedProductIds;
-                    delete user.salesStartDate;
-                    delete user.salesEndDate;
-                    delete user.storeId;
-                    delete user.commissionRate;
-                    delete user.commissionOnCash;
-                    delete user.commissionOnTransfer;
-                    delete user.commissionOnCredit;
-                    delete user.visibleSalesDays;
+                    delete user.assignedProductIds; delete user.salesStartDate; delete user.salesEndDate; delete user.storeId; delete user.commissionRate; delete user.commissionOnCash; delete user.commissionOnTransfer; delete user.commissionOnCredit; delete user.visibleSalesDays;
                 }
                 this.showToast('แก้ไขข้อมูลผู้ใช้สำเร็จ');
             } else {
-                if (this.data.users.some(u => u.username === username)) {
-                    this.showToast('ชื่อผู้ใช้นี้มีอยู่แล้ว', 'error');
-                    return;
-                }
-                if (!password) {
-                    this.showToast('กรุณากำหนดรหัสผ่านสำหรับผู้ใช้ใหม่', 'error');
-                    return;
-                }
+                if (this.data.users.some(u => u.username === username)) { this.showToast('ชื่อผู้ใช้นี้มีอยู่แล้ว', 'error'); return; }
+                if (!password) { this.showToast('กรุณากำหนดรหัสผ่านสำหรับผู้ใช้ใหม่', 'error'); return; }
                 const newUser = { id: Date.now(), username, password, role };
                 if (role === 'seller') {
                     newUser.assignedProductIds = assignedProductIds;
@@ -3794,6 +3688,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setupUserForm(user = null) {
             const form = document.getElementById('user-form');
             form.reset();
+            document.getElementById('user-password-confirm').value = '';
 
             const productContainer = document.getElementById('user-product-assignment-container');
             const salesContainer = document.getElementById('user-sales-period-container');
@@ -3807,6 +3702,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('user-role').value = user.role;
                 document.getElementById('user-password').value = '';
                 document.getElementById('user-password').placeholder = 'เว้นว่างไว้ถ้าไม่ต้องการเปลี่ยน';
+                document.getElementById('user-password-confirm').placeholder = 'เว้นว่างไว้ถ้าไม่ต้องการเปลี่ยน';
 
                 if (user.role === 'seller') {
                     storeContainer.style.display = 'block';
@@ -3835,6 +3731,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 document.getElementById('user-id').value = '';
                 document.getElementById('user-password').placeholder = 'กำหนดรหัสผ่านสำหรับผู้ใช้ใหม่';
+                document.getElementById('user-password-confirm').placeholder = 'ยืนยันรหัสผ่าน';
                 
                 storeContainer.style.display = 'block';
                 salesContainer.style.display = 'block';
@@ -3943,16 +3840,41 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>`;
             document.getElementById('page-stores').innerHTML = `<h2>จัดการร้านค้า</h2> <form id="store-form"> <input type="hidden" id="store-id"> <label for="store-name">ชื่อร้านค้า:</label> <input type="text" id="store-name" required> <div class="form-actions"> <button type="submit" class="success">บันทึกร้านค้า</button> <button type="button" id="clear-store-form-btn" style="background-color:#6c757d;">เคลียร์ฟอร์ม</button> </div> </form> <div class="table-container"><table id="store-table"> <thead> <tr><th>ชื่อร้านค้า</th><th>จัดการ</th></tr> </thead> <tbody></tbody> </table></div>`;
-            document.getElementById('page-users').innerHTML = `<h2>จัดการผู้ใช้</h2> <form id="user-form"> <input type="hidden" id="user-id"> <label for="user-username">ชื่อผู้ใช้:</label> <input type="text" id="user-username" required> <label for="user-password">รหัสผ่าน:</label> <input type="password" id="user-password" placeholder="เว้นว่างไว้ถ้าไม่ต้องการเปลี่ยน"> <label for="user-role">ประเภท:</label> <select id="user-role" required> <option value="seller">Seller</option> <option value="admin">Admin</option> </select> <div id="user-store-assignment-container" style="display: none; grid-column: 1/-1;"></div> <div id="user-commission-settings-container" style="display: none; grid-column: 1/-1;"> <h4>ตั้งค่าคอมมิชชั่น</h4> <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px; align-items: center;"> <label for="user-commission-rate">อัตรา (%):</label> <input type="number" id="user-commission-rate" min="0" max="100" step="any" placeholder="เช่น 3, 5.5"> <label>คิดจากยอดขาย:</label> <div id="user-commission-sources"> <label style="display: inline-block; margin-right: 15px; font-weight: normal;"><input type="checkbox" id="user-commission-cash"> เงินสด</label> <label style="display: inline-block; margin-right: 15px; font-weight: normal;"><input type="checkbox" id="user-commission-transfer"> เงินโอน</label> <label style="display: inline-block; font-weight: normal;"><input type="checkbox" id="user-commission-credit"> เครดิต</label> </div> </div> </div> <div id="user-history-view-container" style="display: none; grid-column: 1/-1;"> <h4>ตั้งค่าการแสดงผลประวัติ</h4> <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px; align-items: center;"> <label for="user-visible-days">จำนวนวันที่ดูประวัติขายได้:</label> <input type="number" id="user-visible-days" min="0" placeholder="0=วันนี้, 1=วันนี้และเมื่อวาน (เว้นว่าง=ทั้งหมด)"> </div> </div> <div id="user-sales-period-container" style="display: none; grid-column: 1/-1;"> <h4>กำหนดระยะเวลาที่สามารถขายได้</h4> <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px; align-items: center;"> <label for="user-sales-start-date">วันที่เริ่มขาย:</label> <input type="date" id="user-sales-start-date"> <label for="user-sales-end-date">วันที่สิ้นสุด:</label> <input type="date" id="user-sales-end-date"> </div> </div> <div id="user-product-assignment-container" style="display: none; grid-column: 1/-1;"> <h4>กำหนดสินค้าที่สามารถขายได้</h4> <div id="user-product-assignment" style="max-height: 200px; overflow-y: auto; border: 1px solid #BFBFBF; padding: 10px; border-radius: 10px;"></div> </div> <div class="form-actions"> <button type="submit" class="success">บันทึกผู้ใช้</button> <button type="button" id="clear-user-form-btn" style="background-color:#6c757d;">เคลียร์ฟอร์ม</button> </div> </form> <div class="table-container"><table id="user-table"> <thead> <tr><th>ชื่อผู้ใช้</th><th>ประเภท</th><th>ร้านค้า</th><th>สินค้าที่ขายได้</th><th>ระยะเวลาที่ขายได้</th><th>จัดการ</th></tr> </thead> <tbody></tbody> </table></div>`; 
+            
+            document.getElementById('page-users').innerHTML = `<h2>จัดการผู้ใช้</h2> 
+                <form id="user-form"> 
+                    <input type="hidden" id="user-id"> 
+                    <label for="user-username">ชื่อผู้ใช้:</label> 
+                    <input type="text" id="user-username" required> 
+                    <label for="user-password">รหัสผ่านใหม่:</label> 
+                    <input type="password" id="user-password" placeholder="เว้นว่างไว้ถ้าไม่ต้องการเปลี่ยน"> 
+                    <label for="user-password-confirm">ยืนยันรหัสผ่าน:</label>
+                    <input type="password" id="user-password-confirm" placeholder="เว้นว่างไว้ถ้าไม่ต้องการเปลี่ยน">
+                    <div style="grid-column: 2 / -1; margin-top: -10px; margin-bottom: 10px;">
+                        <label style="text-align:left; font-weight:normal; display:block; cursor:pointer;">
+                            <input type="checkbox" id="show-password-user-form"> แสดงรหัสผ่าน
+                        </label>
+                    </div>
+                    <label for="user-role">ประเภท:</label> <select id="user-role" required> <option value="seller">Seller</option> <option value="admin">Admin</option> </select> <div id="user-store-assignment-container" style="display: none; grid-column: 1/-1;"></div> <div id="user-commission-settings-container" style="display: none; grid-column: 1/-1;"> <h4>ตั้งค่าคอมมิชชั่น</h4> <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px; align-items: center;"> <label for="user-commission-rate">อัตรา (%):</label> <input type="number" id="user-commission-rate" min="0" max="100" step="any" placeholder="เช่น 3, 5.5"> <label>คิดจากยอดขาย:</label> <div id="user-commission-sources"> <label style="display: inline-block; margin-right: 15px; font-weight: normal;"><input type="checkbox" id="user-commission-cash"> เงินสด</label> <label style="display: inline-block; margin-right: 15px; font-weight: normal;"><input type="checkbox" id="user-commission-transfer"> เงินโอน</label> <label style="display: inline-block; font-weight: normal;"><input type="checkbox" id="user-commission-credit"> เครดิต</label> </div> </div> </div> <div id="user-history-view-container" style="display: none; grid-column: 1/-1;"> <h4>ตั้งค่าการแสดงผลประวัติ</h4> <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px; align-items: center;"> <label for="user-visible-days">จำนวนวันที่ดูประวัติขายได้:</label> <input type="number" id="user-visible-days" min="0" placeholder="0=วันนี้, 1=วันนี้และเมื่อวาน (เว้นว่าง=ทั้งหมด)"> </div> </div> <div id="user-sales-period-container" style="display: none; grid-column: 1/-1;"> <h4>กำหนดระยะเวลาที่สามารถขายได้</h4> <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px; align-items: center;"> <label for="user-sales-start-date">วันที่เริ่มขาย:</label> <input type="date" id="user-sales-start-date"> <label for="user-sales-end-date">วันที่สิ้นสุด:</label> <input type="date" id="user-sales-end-date"> </div> </div> <div id="user-product-assignment-container" style="display: none; grid-column: 1/-1;"> <h4>กำหนดสินค้าที่สามารถขายได้</h4> <div id="user-product-assignment" style="max-height: 200px; overflow-y: auto; border: 1px solid #BFBFBF; padding: 10px; border-radius: 10px;"></div> </div> <div class="form-actions"> <button type="submit" class="success">บันทึกผู้ใช้</button> <button type="button" id="clear-user-form-btn" style="background-color:#6c757d;">เคลียร์ฟอร์ม</button> </div> 
+                </form> 
+                <div class="table-container"><table id="user-table"> <thead> <tr><th>ชื่อผู้ใช้</th><th>ประเภท</th><th>ร้านค้า</th><th>สินค้าที่ขายได้</th><th>ระยะเวลาที่ขายได้</th><th>จัดการ</th></tr> </thead> <tbody></tbody> </table></div>`;
+
             document.getElementById('page-data').innerHTML = `<h2>จัดการข้อมูล</h2>
             <!-- Admin Sections -->
             <div class="data-management-section admin-only data-restore-section"><h3>โหลดข้อมูลจากไฟล์ (Restore)</h3><p style="color: var(--danger-color);"><b>คำเตือน:</b> การโหลดข้อมูลจากไฟล์จะรวมข้อมูลเข้ากับข้อมูลปัจจุบัน ข้อมูลที่ซ้ำกันจะถูกเขียนทับด้วยข้อมูลจากไฟล์!</p><input type="file" id="data-file-input" style="display: none;" accept=".json,application/json"><button type="button" id="load-from-file-btn" style="background-color: #E97132;">เลือกไฟล์สำรอง (.json)</button></div>
             <div class="data-management-section admin-only">
                 <h3>ตั้งรหัสผ่านสำหรับไฟล์สำรอง</h3>
                 <p>รหัสผ่านนี้จะใช้เข้ารหัสไฟล์สำรองข้อมูลที่สร้างโดยแอดมินโดยอัตโนมัติ</p>
-                <form id="backup-password-form" style="max-width: 400px; display: grid; grid-template-columns: 1fr; gap: 10px;">
+                <form id="backup-password-form" style="max-width: 400px;">
                     <label for="backup-password" style="text-align:left;">รหัสผ่านใหม่ (เว้นว่างเพื่อลบ):</label>
                     <input type="password" id="backup-password" placeholder="พิมพ์รหัสผ่านที่นี่">
+                    <label for="backup-password-confirm" style="text-align:left;">ยืนยันรหัสผ่านใหม่:</label>
+                    <input type="password" id="backup-password-confirm" placeholder="พิมพ์รหัสผ่านอีกครั้ง">
+                    <div style="grid-column: 1 / -1; text-align: left;">
+                         <label style="font-weight: normal; cursor: pointer;">
+                            <input type="checkbox" id="show-backup-password"> แสดงรหัสผ่าน
+                        </label>
+                    </div>
                     <div class="form-actions" style="justify-content: center;">
                         <button type="submit" class="success">บันทึกรหัสผ่าน</button>
                     </div>
@@ -4141,6 +4063,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (e.target.id === 'generate-aggregated-summary-btn') this.runAdminAggregatedSummary();
             }); 
 		
+            document.body.addEventListener('change', (e) => {
+                if (e.target.id === 'show-password-login') {
+                    document.getElementById('password').type = e.target.checked ? 'text' : 'password';
+                }
+                if (e.target.id === 'show-password-user-form') {
+                    document.getElementById('user-password').type = e.target.checked ? 'text' : 'password';
+                    document.getElementById('user-password-confirm').type = e.target.checked ? 'text' : 'password';
+                }
+                if (e.target.id === 'show-backup-password') {
+                    document.getElementById('backup-password').type = e.target.checked ? 'text' : 'password';
+                    document.getElementById('backup-password-confirm').type = e.target.checked ? 'text' : 'password';
+                }
+            });
+
 	        mainApp.addEventListener('change', (e) => { 
                 if(e.target.name === 'payment-method') this.togglePaymentDetailFields(); 
                 if (e.target.id === 'user-role') { 
