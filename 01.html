@@ -515,6 +515,40 @@
                 white-space: nowrap;
             }
             /* --- END NEW --- */
+
+            /* === START: MOBILE USER PAGE FORM OVERRIDES === */
+            #page-users #user-form,
+            #page-data #backup-password-form {
+                grid-template-columns: 1fr;
+            }
+            #page-users #user-form label,
+            #page-data #backup-password-form label {
+                text-align: left;
+                margin-bottom: -10px;
+            }
+            #page-users #user-form .form-group,
+            #page-data #backup-password-form .form-group {
+                grid-column: 1 / -1;
+                display: flex;
+                flex-direction: column;
+                gap: 5px;
+            }
+            #page-users #user-form .form-group label,
+            #page-data #backup-password-form .form-group label {
+                 margin-bottom: 0;
+            }
+            #page-users #user-form #user-commission-sources {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px 20px;
+                padding: 10px;
+                background: #f0f8ff;
+                border-radius: 8px;
+            }
+             #page-users #user-form #user-commission-sources label {
+                margin-bottom: 0;
+            }
+            /* === END: MOBILE USER PAGE FORM OVERRIDES === */
             
             .form-actions {
                 flex-direction: column;
@@ -3844,18 +3878,42 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('page-users').innerHTML = `<h2>จัดการผู้ใช้</h2> 
                 <form id="user-form"> 
                     <input type="hidden" id="user-id"> 
-                    <label for="user-username">ชื่อผู้ใช้:</label> 
-                    <input type="text" id="user-username" required> 
-                    <label for="user-password">รหัสผ่านใหม่:</label> 
-                    <input type="password" id="user-password" placeholder="เว้นว่างไว้ถ้าไม่ต้องการเปลี่ยน"> 
-                    <label for="user-password-confirm">ยืนยันรหัสผ่าน:</label>
-                    <input type="password" id="user-password-confirm" placeholder="เว้นว่างไว้ถ้าไม่ต้องการเปลี่ยน">
-                    <div style="grid-column: 2 / -1; margin-top: -10px; margin-bottom: 10px;">
-                        <label style="text-align:left; font-weight:normal; display:block; cursor:pointer;">
+                    <div class="form-group"><label for="user-username">ชื่อผู้ใช้:</label><input type="text" id="user-username" required></div>
+                    <div class="form-group"><label for="user-password">รหัสผ่านใหม่:</label><input type="password" id="user-password" placeholder="เว้นว่างไว้ถ้าไม่ต้องการเปลี่ยน"></div>
+                    <div class="form-group"><label for="user-password-confirm">ยืนยันรหัสผ่าน:</label><input type="password" id="user-password-confirm" placeholder="เว้นว่างไว้ถ้าไม่ต้องการเปลี่ยน"></div>
+                    <div class="form-group">
+                        <label style="font-weight:normal; display:block; cursor:pointer;">
                             <input type="checkbox" id="show-password-user-form"> แสดงรหัสผ่าน
                         </label>
                     </div>
-                    <label for="user-role">ประเภท:</label> <select id="user-role" required> <option value="seller">Seller</option> <option value="admin">Admin</option> </select> <div id="user-store-assignment-container" style="display: none; grid-column: 1/-1;"></div> <div id="user-commission-settings-container" style="display: none; grid-column: 1/-1;"> <h4>ตั้งค่าคอมมิชชั่น</h4> <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px; align-items: center;"> <label for="user-commission-rate">อัตรา (%):</label> <input type="number" id="user-commission-rate" min="0" max="100" step="any" placeholder="เช่น 3, 5.5"> <label>คิดจากยอดขาย:</label> <div id="user-commission-sources"> <label style="display: inline-block; margin-right: 15px; font-weight: normal;"><input type="checkbox" id="user-commission-cash"> เงินสด</label> <label style="display: inline-block; margin-right: 15px; font-weight: normal;"><input type="checkbox" id="user-commission-transfer"> เงินโอน</label> <label style="display: inline-block; font-weight: normal;"><input type="checkbox" id="user-commission-credit"> เครดิต</label> </div> </div> </div> <div id="user-history-view-container" style="display: none; grid-column: 1/-1;"> <h4>ตั้งค่าการแสดงผลประวัติ</h4> <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px; align-items: center;"> <label for="user-visible-days">จำนวนวันที่ดูประวัติขายได้:</label> <input type="number" id="user-visible-days" min="0" placeholder="0=วันนี้, 1=วันนี้และเมื่อวาน (เว้นว่าง=ทั้งหมด)"> </div> </div> <div id="user-sales-period-container" style="display: none; grid-column: 1/-1;"> <h4>กำหนดระยะเวลาที่สามารถขายได้</h4> <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px; align-items: center;"> <label for="user-sales-start-date">วันที่เริ่มขาย:</label> <input type="date" id="user-sales-start-date"> <label for="user-sales-end-date">วันที่สิ้นสุด:</label> <input type="date" id="user-sales-end-date"> </div> </div> <div id="user-product-assignment-container" style="display: none; grid-column: 1/-1;"> <h4>กำหนดสินค้าที่สามารถขายได้</h4> <div id="user-product-assignment" style="max-height: 200px; overflow-y: auto; border: 1px solid #BFBFBF; padding: 10px; border-radius: 10px;"></div> </div> <div class="form-actions"> <button type="submit" class="success">บันทึกผู้ใช้</button> <button type="button" id="clear-user-form-btn" style="background-color:#6c757d;">เคลียร์ฟอร์ม</button> </div> 
+                    <div class="form-group"><label for="user-role">ประเภท:</label><select id="user-role" required> <option value="seller">Seller</option> <option value="admin">Admin</option> </select></div>
+                    <div id="user-store-assignment-container" class="form-group"></div>
+                    <div id="user-commission-settings-container" class="form-group"> 
+                        <h4>ตั้งค่าคอมมิชชั่น</h4>
+                        <div class="form-group"><label for="user-commission-rate">อัตรา (%):</label><input type="number" id="user-commission-rate" min="0" max="100" step="any" placeholder="เช่น 3, 5.5"></div>
+                        <div class="form-group">
+                            <label>คิดจากยอดขาย:</label>
+                            <div id="user-commission-sources"> 
+                                <label><input type="checkbox" id="user-commission-cash"> เงินสด</label> 
+                                <label><input type="checkbox" id="user-commission-transfer"> เงินโอน</label> 
+                                <label><input type="checkbox" id="user-commission-credit"> เครดิต</label> 
+                            </div>
+                        </div>
+                    </div> 
+                    <div id="user-history-view-container" class="form-group"> 
+                        <h4>ตั้งค่าการแสดงผลประวัติ</h4>
+                        <div class="form-group"><label for="user-visible-days">จำนวนวันที่ดูประวัติขายได้:</label><input type="number" id="user-visible-days" min="0" placeholder="0=วันนี้, 1=วันนี้และเมื่อวาน (เว้นว่าง=ทั้งหมด)"></div>
+                    </div> 
+                    <div id="user-sales-period-container" class="form-group">
+                        <h4>กำหนดระยะเวลาที่สามารถขายได้</h4> 
+                        <div class="form-group"><label for="user-sales-start-date">วันที่เริ่มขาย:</label><input type="date" id="user-sales-start-date"></div>
+                        <div class="form-group"><label for="user-sales-end-date">วันที่สิ้นสุด:</label><input type="date" id="user-sales-end-date"></div>
+                    </div> 
+                    <div id="user-product-assignment-container" class="form-group"> 
+                        <h4>กำหนดสินค้าที่สามารถขายได้</h4> 
+                        <div id="user-product-assignment" style="max-height: 200px; overflow-y: auto; border: 1px solid #BFBFBF; padding: 10px; border-radius: 10px;"></div> 
+                    </div> 
+                    <div class="form-actions"> <button type="submit" class="success">บันทึกผู้ใช้</button> <button type="button" id="clear-user-form-btn" style="background-color:#6c757d;">เคลียร์ฟอร์ม</button> </div> 
                 </form> 
                 <div class="table-container"><table id="user-table"> <thead> <tr><th>ชื่อผู้ใช้</th><th>ประเภท</th><th>ร้านค้า</th><th>สินค้าที่ขายได้</th><th>ระยะเวลาที่ขายได้</th><th>จัดการ</th></tr> </thead> <tbody></tbody> </table></div>`;
 
@@ -3866,11 +3924,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 <h3>ตั้งรหัสผ่านสำหรับไฟล์สำรอง</h3>
                 <p>รหัสผ่านนี้จะใช้เข้ารหัสไฟล์สำรองข้อมูลที่สร้างโดยแอดมินโดยอัตโนมัติ</p>
                 <form id="backup-password-form" style="max-width: 400px;">
-                    <label for="backup-password" style="text-align:left;">รหัสผ่านใหม่ (เว้นว่างเพื่อลบ):</label>
-                    <input type="password" id="backup-password" placeholder="พิมพ์รหัสผ่านที่นี่">
-                    <label for="backup-password-confirm" style="text-align:left;">ยืนยันรหัสผ่านใหม่:</label>
-                    <input type="password" id="backup-password-confirm" placeholder="พิมพ์รหัสผ่านอีกครั้ง">
-                    <div style="grid-column: 1 / -1; text-align: left;">
+                    <div class="form-group"><label for="backup-password">รหัสผ่านใหม่ (เว้นว่างเพื่อลบ):</label><input type="password" id="backup-password" placeholder="พิมพ์รหัสผ่านที่นี่"></div>
+                    <div class="form-group"><label for="backup-password-confirm">ยืนยันรหัสผ่านใหม่:</label><input type="password" id="backup-password-confirm" placeholder="พิมพ์รหัสผ่านอีกครั้ง"></div>
+                    <div class="form-group">
                          <label style="font-weight: normal; cursor: pointer;">
                             <input type="checkbox" id="show-backup-password"> แสดงรหัสผ่าน
                         </label>
