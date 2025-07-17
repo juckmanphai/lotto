@@ -1829,7 +1829,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             filteredSales.forEach(sale => {
                 const saleDate = new Date(sale.date);
-                const dateString = this.formatThaiDateShortYear(sale.date);
+                const dateString = this.formatThaiDateFullYear(sale.date);
                 const timeString = `${String(saleDate.getHours()).padStart(2, '0')}:${String(saleDate.getMinutes()).padStart(2, '0')}`;
                 
                 let paymentDetail = '-';
@@ -1838,7 +1838,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else if (sale.paymentMethod === 'เงินโอน') {
                     paymentDetail = sale.transferorName || '-';
                 }
-                const dueDateString = this.formatThaiDateShortYear(sale.creditDueDate);
+                const dueDateString = this.formatThaiDateFullYear(sale.creditDueDate);
                 
                 grandTotalSales += sale.total;
                 if (isAdminReport) {
@@ -1975,7 +1975,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let csvRows = [];
             
             const formatCurrency = (num) => this.formatNumberSmart(num);
-            const formatDate = (dateStr) => this.formatThaiDateShortYear(dateStr);
+            const formatDate = (dateStr) => this.formatThaiDateFullYear(dateStr);
             const periodString = `${this.formatThaiDateFullYear(startDate)} ถึง ${this.formatThaiDateFullYear(endDate)}`;
 
             csvRows.push(['สรุปโดย:', this.currentUser.username]);
@@ -2066,7 +2066,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let csvRows = [];
             
             const formatCurrency = (num) => this.formatNumberSmart(num);
-            const formatDate = (dateStr) => this.formatThaiDateShortYear(dateStr);
+            const formatDate = (dateStr) => this.formatThaiDateFullYear(dateStr);
             const periodString = `${this.formatThaiDateFullYear(startDate)} ถึง ${this.formatThaiDateFullYear(endDate)}`;
 
             csvRows.push(['สรุปโดย:', this.currentUser.username]);
@@ -2455,7 +2455,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             filteredSales.forEach(sale => {
                 const saleDate = new Date(sale.date);
-                const dateString = this.formatThaiDateShortYear(sale.date);
+                const dateString = this.formatThaiDateFullYear(sale.date);
                 const timeString = `${String(saleDate.getHours()).padStart(2, '0')}:${String(saleDate.getMinutes()).padStart(2, '0')}`;
                 
                 let paymentDetail = '-';
@@ -2464,7 +2464,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else if (sale.paymentMethod === 'เงินโอน') {
                     paymentDetail = sale.transferorName || '-';
                 }
-                const dueDateString = this.formatThaiDateShortYear(sale.creditDueDate);
+                const dueDateString = this.formatThaiDateFullYear(sale.creditDueDate);
 
                 sale.items.forEach((item, index) => {
                     const itemTotal = item.price * item.quantity;
