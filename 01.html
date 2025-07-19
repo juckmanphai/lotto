@@ -1747,7 +1747,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const startDate = new Date(Math.min.apply(null, allDates)); startDate.setHours(0, 0, 0, 0); 
             const endDate = new Date(Math.max.apply(null, allDates)); endDate.setHours(23, 59, 59, 999); 
             const timeDiff = endDate.getTime() - startDate.getTime();
-            const dayCount = Math.round(timeDiff / (1000 * 3600 * 24)) + 1;
+            const dayCount = Math.round(timeDiff / (1000 * 3600 * 24));
             const title = `สรุปยอดขายทั้งหมด (${sellerName})`;
             const periodName = `Admin_All_${sellerId}`;
             this._runSummary(startDate, endDate, title, periodName, sellerId, { dayCount }); 
@@ -1874,7 +1874,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const endDate = new Date(endDateStr); endDate.setHours(23, 59, 59, 999);
             if (startDate > endDate) { this.showToast("วันที่เริ่มต้นต้องมาก่อนวันที่สิ้นสุด", "error"); return; }
             const timeDiff = endDate.getTime() - startDate.getTime();
-            const dayCount = Math.round(timeDiff / (1000 * 3600 * 24)) + 1;
+            const dayCount = Math.round(timeDiff / (1000 * 3600 * 24));
             const title = `สรุปยอดขายตามช่วงวันที่ (${this.currentUser.username})`;
             const periodName = `MyRange_${startDateStr}_to_${endDateStr}`;
             this._runSummary(startDate, endDate, title, periodName, this.currentUser.id, { dayCount });
@@ -1889,7 +1889,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const endDate = new Date(Math.max.apply(null, allMyDates));
             endDate.setHours(23, 59, 59, 999); 
             const timeDiff = endDate.getTime() - startDate.getTime();
-            const dayCount = Math.round(timeDiff / (1000 * 3600 * 24)) + 1;
+            const dayCount = Math.round(timeDiff / (1000 * 3600 * 24));
             this._runSummary(startDate, endDate, `สรุปยอดขายทั้งหมด (${this.currentUser.username})`, `MyAll`, this.currentUser.id, { dayCount }); 
         },
         
