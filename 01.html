@@ -1800,19 +1800,46 @@ document.addEventListener('DOMContentLoaded', () => {
             this.openSummaryOutputModal();
         },
 
-        _runSummary(startDate, endDate, title, periodName, sellerId = null) { 
+        _runSummary(startDate, endDate, title, periodName, sellerId = null, extraContext = {}) { 
             const summaryResult = this.generatePosSummaryData(startDate, endDate, sellerId); 
             if (summaryResult.salesCount === 0) { this.showToast("ไม่พบข้อมูลการขายในช่วงที่กำหนด"); return; } 
             const isSingleDay = (startDate.getFullYear() === endDate.getFullYear() && startDate.getMonth() === endDate.getMonth() && startDate.getDate() === endDate.getDate()); 
             const thaiDateString = isSingleDay ? this.formatThaiDateShortYear(startDate) : `${this.formatThaiDateShortYear(startDate)} ถึง ${this.formatThaiDateShortYear(endDate)}`; 
             const dateString = `${startDate.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]}`; 
             this.summaryContext = { type: 'aggregated_pos', summaryResult, title, dateString, thaiDateString, periodName, sellerIdFilter: sellerId, startDate, endDate }; 
+            Object.assign(this.summaryContext, extraContext);
             this.openSummaryOutputModal(); 
         },
 
         summarizeMyToday() { const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0); const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999); this._runSummary(todayStart, todayEnd, `สรุปยอดขายวันนี้ (${this.currentUser.username})`, `MyToday`, this.currentUser.id); },
         summarizeMyDay() { const dateStr = document.getElementById('my-summary-date').value; if (!dateStr) { this.showToast("กรุณาเลือกวันที่"); return; } const startDate = new Date(dateStr); startDate.setHours(0, 0, 0, 0); const endDate = new Date(dateStr); endDate.setHours(23, 59, 59, 999); this._runSummary(startDate, endDate, `สรุปยอดขายวันที่เลือก (${this.currentUser.username})`, `MyDate_${dateStr}`, this.currentUser.id); },
-        summarizeMyAll() { const mySales = this.data.sales.filter(s => s.sellerId === this.currentUser.id); if (mySales.length === 0) { this.showToast("คุณยังไม่มีข้อมูลการขาย"); return; } const allMyDates = mySales.map(s => new Date(s.date)); const startDate = new Date(Math.min.apply(null, allMyDates)); startDate.setHours(0, 0, 0, 0); const endDate = new Date(); endDate.setHours(23, 59, 59, 999); this._runSummary(startDate, endDate, `สรุปยอดขายทั้งหมด (${this.currentUser.username})`, `MyAll`, this.currentUser.id); },
+        
+        summarizeMyRange() {
+            const startDateStr = document.getElementById('my-summary-start-date').value;
+            const endDateStr = document.getElementById('my-summary-end-date').value;
+            if (!startDateStr || !endDateStr) { this.showToast("กรุณาเลือกวันที่เริ่มต้นและสิ้นสุด", "error"); return; }
+            const startDate = new Date(startDateStr); startDate.setHours(0, 0, 0, 0);
+            const endDate = new Date(endDateStr); endDate.setHours(23, 59, 59, 999);
+            if (startDate > endDate) { this.showToast("วันที่เริ่มต้นต้องมาก่อนวันที่สิ้นสุด", "error"); return; }
+            const timeDiff = endDate.getTime() - startDate.getTime();
+            const dayCount = Math.round(timeDiff / (1000 * 3600 * 24)) + 1;
+            const title = `สรุปยอดขายตามช่วงวันที่ (${this.currentUser.username})`;
+            const periodName = `MyRange_${startDateStr}_to_${endDateStr}`;
+            this._runSummary(startDate, endDate, title, periodName, this.currentUser.id, { dayCount });
+        },
+        
+        summarizeMyAll() { 
+            const mySales = this.data.sales.filter(s => s.sellerId === this.currentUser.id); 
+            if (mySales.length === 0) { this.showToast("คุณยังไม่มีข้อมูลการขาย"); return; } 
+            const allMyDates = mySales.map(s => new Date(s.date)); 
+            const startDate = new Date(Math.min.apply(null, allMyDates)); 
+            startDate.setHours(0, 0, 0, 0); 
+            const endDate = new Date(Math.max.apply(null, allMyDates));
+            endDate.setHours(23, 59, 59, 999); 
+            const timeDiff = endDate.getTime() - startDate.getTime();
+            const dayCount = Math.round(timeDiff / (1000 * 3600 * 24)) + 1;
+            this._runSummary(startDate, endDate, `สรุปยอดขายทั้งหมด (${this.currentUser.username})`, `MyAll`, this.currentUser.id, { dayCount }); 
+        },
         
         buildDetailedListHtml(context) {
             const { filteredSales, title, thaiDateString, sellerId } = context;
@@ -2326,7 +2353,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         
         buildPosSummaryHtml(context) {
-            const { summaryResult, title, thaiDateString, sellerIdFilter, startDate, endDate } = context;
+            const { summaryResult, title, thaiDateString, sellerIdFilter, startDate, endDate, dayCount } = context;
             const isSingleDayReport = startDate.getFullYear() === endDate.getFullYear() && startDate.getMonth() === endDate.getMonth() && startDate.getDate() === endDate.getDate();
             const formatCurrency = (num) => this.formatNumberSmart(num);
             
@@ -2334,6 +2361,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isSingleDayReport) {
                 const fullDate = this.formatThaiDateFullYear(startDate);
                 dateDisplayString = ` ${fullDate}`;
+            } else if (dayCount) {
+                dateDisplayString = `${thaiDateString} (รวม ${dayCount} วัน)`;
             }
 
             const summaryTimestamp = this.formatThaiTimestamp(new Date());
@@ -4087,7 +4116,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div id="seller-backup-content" class="collapsible-content seller-only"><div style="text-align:center; padding-top: 10px;"><p style="margin-top:0;">สำรองข้อมูลทั้งหมด (ผู้ใช้, สินค้า, ประวัติการขาย) ลงในไฟล์ JSON เพื่อเก็บไว้หรือย้ายไปยังเครื่องอื่น</p><button id="save-to-file-btn-seller" class="success">บันทึกข้อมูลทั้งหมดลงไฟล์</button><button id="save-to-browser-btn-seller" style="background-color: #007bff;">บันทึกข้อมูลปัจจุบันลงในเบราว์เซอร์</button></div></div>
             
             <div class="collapsible-bar seller-only" data-target="seller-summary-content"><span>รายงานสรุป (สำหรับผู้ใช้ปัจจุบัน)</span><span class="arrow">▶</span></div>
-            <div id="seller-summary-content" class="collapsible-content seller-only"><div style="text-align:center;"><div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;"><button id="my-summary-today-btn" style="background-color: var(--warning-color);">สรุปยอดขายวันนี้</button><button id="my-summary-all-btn" style="background-color: #673ab7;">สรุปทั้งหมดของฉัน</button></div><div class="summary-form-inline" style="margin-top: 15px; justify-content: center; flex-direction: column; gap:10px; align-items: stretch;"><label>เลือกวันที่: <input type="date" id="my-summary-date" style="width:100%;"></label><button id="my-summary-by-day-btn" style="background-color: #03a9f4;">สรุปยอดขายวันที่เลือก</button></div></div></div>
+            <div id="seller-summary-content" class="collapsible-content seller-only"><div style="text-align:center;"><div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;"><button id="my-summary-today-btn" style="background-color: var(--warning-color);">สรุปยอดขายวันนี้</button><button id="my-summary-all-btn" style="background-color: #673ab7;">สรุปทั้งหมดของฉัน</button></div><div class="summary-form-inline" style="margin-top: 15px; justify-content: center; flex-direction: column; gap:10px; align-items: stretch;"><label>เลือกวันที่: <input type="date" id="my-summary-date" style="width:100%;"></label><button id="my-summary-by-day-btn" style="background-color: #03a9f4;">สรุปยอดขายวันที่เลือก</button></div><div class="summary-form-inline" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd; justify-content: center; flex-direction: column; gap:10px; align-items: stretch;"><div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;"><label>จากวันที่: <input type="date" id="my-summary-start-date"></label><label>ถึงวันที่: <input type="date" id="my-summary-end-date"></label></div><button id="my-summary-by-range-btn" style="background-color: #ff9800;">สรุปยอดขายตามช่วงวันที่</button></div></div></div>
 
             <!-- START: NEW SELLER DETAILED REPORT SECTION -->
             <div class="collapsible-bar seller-only" data-target="seller-detailed-report-content" style="background-color: #ED01ED;"><span>แจกแจงรายละเอียดการขาย</span><span class="arrow">▶</span></div>
@@ -4244,6 +4273,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (e.target.id === 'my-summary-today-btn') this.summarizeMyToday(); 
                 if (e.target.id === 'my-summary-all-btn') this.summarizeMyAll(); 
                 if (e.target.id === 'my-summary-by-day-btn') this.summarizeMyDay(); 
+                if (e.target.id === 'my-summary-by-range-btn') this.summarizeMyRange();
+
 
                 // New Admin Summary Buttons
                 if (e.target.id === 'generate-detailed-report-btn') this.runAdminDetailedReport();
