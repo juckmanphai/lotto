@@ -25,10 +25,10 @@
         }
 
         .main-wrapper {
-            max-width: 1200px; 
+            max-width: 900px; 
             margin: 5px auto; /* ลด margin ด้านบน/ล่าง */
             background-color: var(--background-color);
-            border: 2px solid #ED01ED; 
+            border: 1px solid #ED01ED; 
             padding: 5px; /* ลด padding โดยรวม */
             border-radius: 8px; /* ลด radius เล็กน้อย */
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* ลดขนาดเงา */
@@ -109,23 +109,33 @@
         .section-header > span:first-child { flex: 1; text-align: left; font-size: 1.0em; /* ลด font size เล็กน้อย */ color: white; }
         
         /* === START: ICON STYLES === */
-        .section-header i {
-            margin-right: 10px;
-            width: 20px;
-            text-align: center;
-            font-size: 1.1em;
-            transition: transform 0.3s ease;
-            color: white;
-        }
+.section-header .icon {
+    margin-right: 8px;
+    display: inline-block;
+    font-style: normal; /* ป้องกัน Emoji เอียง */
+    font-size: 1.4em; /* เพิ่มขนาด Emoji ให้ใหญ่ขึ้นเล็กน้อย */
+    line-height: 1;
+    vertical-align: middle;
+    transition: transform 0.3s ease;
+}
 
-        .section-header:hover i {
-            transform: scale(1.1);
-            color: #000000;
-        }
+.section-header:hover .icon {
+    transform: scale(1.2); /* ขยายใหญ่ขึ้นเมื่อเอาเมาส์ชี้ */
+}
 
-        .section-header.active i {
-            transform: rotate(15deg);
-        }
+.section-header.active .icon {
+    transform: rotate(15deg); /* เอียงเล็กน้อยเมื่อเปิดเมนู */
+}
+
+/* ปรับขนาดตัวอักษรของหัวข้อให้สมดุลกับ Emoji */
+.section-header > span:first-child {
+    flex: 1;
+    text-align: left;
+    font-size: 1.05em; 
+    color: white;
+    display: flex;
+    align-items: center; /* จัดให้ Emoji กับข้อความอยู่กึ่งกลางบรรทัด */
+}
         /* === END: ICON STYLES === */
         
         /* --- Colors for each section header --- */
@@ -408,15 +418,68 @@
 }
 
 
-        .data-management-section { border: 1px solid var(--border-color); padding: 10px; /* ลด padding */ margin-top: 10px; /* ลด margin */ border-radius: 6px; background: var(--background-alt); text-align: center; color: var(--text-color); }
-        .data-management-section h3 { margin-top: 0; border-bottom: 1px solid var(--border-color); padding-bottom: 5px; /* ลด padding */ color: var(--text-color); }
-        .data-management-section button { margin: 3px; /* ลด margin */ padding: 8px 12px; /* ลด padding */ }
+.data-management-section {
+    border: 1px solid var(--border-color);
+    padding: 10px;          /* ลด padding */
+    margin-top: 10px;       /* ลด margin */
+    border-radius: 6px;
+    background: var(--background-alt);
+    text-align: center;
+    color: var(--text-color);
+}
 
-        .summary-section { border: 1px solid #666; border-radius: 6px; padding: 10px 15px; /* ลด padding */ margin-bottom: 10px; /* ลด margin */ background-color: var(--background-color); color: var(--text-color); }
-        .summary-form-inline { display: flex; flex-wrap: wrap; gap: 10px; /* ลด gap */ align-items: flex-end; color: var(--text-color); }
+.data-management-section h3 {
+    margin-top: 0;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 5px;    /* ลด padding */
+    color: var(--text-color);
+}
+
+.data-management-section button {
+    margin: 3px;            /* ลด margin */
+    padding: 8px 12px;      /* ลด padding */
+}
+
+.summary-section {
+    border: 1px solid #0088ff;
+    border-radius: 6px;
+    padding: 10px 15px;     /* ลด padding */
+    margin-bottom: 10px;    /* ลด margin */
+    background-color: var(--background-color);
+    color: var(--text-color);
+}
+
+.summary-form-inline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;              /* ลด gap */
+    align-items: flex-end;
+    color: var(--text-color);
+}
+
         
-        #toast-notification { position: fixed; bottom: 15px; /* ลดระยะห่าง */ left: 50%; transform: translateX(-50%); padding: 8px 16px; /* ลด padding */ color: white; background-color: var(--success-color); border-radius: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 1001; opacity: 0; visibility: hidden; transition: opacity 0.5s, visibility 0.5s, transform 0.5s; font-size: 1.0em; /* ลด font size */ }
-        #toast-notification.show { opacity: 1; visibility: visible; }
+#toast-notification {
+    position: fixed;
+    bottom: 15px;                 /* ลดระยะห่าง */
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 8px 16px;            /* ลด padding */
+    color: white;
+    background-color: var(--success-color);
+    border-radius: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    z-index: 1001;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.5s, visibility 0.5s, transform 0.5s;
+    font-size: 1.0em;             /* ลด font size */
+}
+
+#toast-notification.show {
+    opacity: 1;
+    visibility: visible;
+}
+
 
         /* === START: POPUP STYLE MODIFICATION (USER REQUEST) === */
         .modal-overlay {
@@ -434,30 +497,64 @@
             overflow-y: auto;
         }
         
-        .modal-content-container { background-color: transparent; padding: 0; border: none; box-shadow: none; display: flex; flex-direction: column; align-items: center; margin: auto 0; width: 100%; max-width: 950px; }
-        #modalBodyContent { background-color: var(--background-color); border: 1px solid #4CAF50; /* ลดขนาดเส้นขอบ */ border-radius: 8px; /* ลด radius */ padding: 5px; /* ลด padding */ width: 100%; box-shadow: 0 2px 8px rgba(0,0,0,0.25); /* ลดขนาดเงา */ max-height: 90vh; /* เพิ่ม max height */ overflow-y: auto; color: #000000 !important; }
-        #modalBodyContent, #modalBodyContent * { color: #000000 !important; }
+.modal-content-container {
+    background-color: transparent;
+    padding: 0;
+    border: none;
+    box-shadow: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: auto 0;
+    width: 100%;
+    max-width: 950px;
+}
+
+#modalBodyContent {
+    background-color: var(--background-color);
+    border: 1px solid #4CAF50; /* ลดขนาดเส้นขอบ */
+    border-radius: 8px;        /* ลด radius */
+    padding: 15px 5px;
+    width: 100%;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25); /* ลดขนาดเงา */
+    max-height: 90vh;          /* เพิ่ม max height */
+    overflow-y: auto;
+    color: #0088ff !important;
+}
+
+        #modalBodyContent, #modalBodyContent * { color: #0088ff !important; }
         
         #modalBodyContent h2 {
             margin-top: 0;
             margin-bottom: 5px; /* ลด margin */
             padding-bottom: 3px;
             font-size: 1.1rem; /* ลด font size */
-            color: #000000 !important;
+            color: #0088ff !important;
         }
         #modalBodyContent p {
             margin-top: 2px; /* ลด margin */
             margin-bottom: 2px; /* ลด margin */
             line-height: 1.0;
-            color: #000000 !important;
+            color: #0088ff !important;
         }
         #modalBodyContent table {
             margin-top: 5px; /* ลด margin */
-            color: #000000 !important;
+            color: #0088ff !important;
+            border-collapse: collapse; /* เพิ่ม: ให้เส้นขอบรวมกัน */
+            border: 0.5px solid #333; /* ปรับ: เส้นขอบตารางหลักให้คมชัด */
         }
+#modalBodyContent table th,
+#modalBodyContent table td {
+    border: 0.5px solid #333 !important;
+    /* แก้ไข padding สำหรับ Desktop เพื่อเพิ่มความสูงของแถวตามคำแนะนำ */
+    padding: 3px 5px !important; 
+    font-size: clamp(10px, 1.2vw, 14px); /* ใช้ clamp */
+    text-align: center;
+}
+
         #modalBodyContent hr {
             margin: 10px 0; /* ลด margin */
-            border-color: #666;
+            border-color: #0088ff;
         }
         
         /* === START: [NEW] CSS for Popup Controls === */
@@ -637,9 +734,49 @@
         #page-pos #add-to-cart-form .date-time-group input {
             flex-grow: 1;
             min-width: 0;
-            padding: 8px; /* ลด padding */
+            font-size: clamp(0.55rem, 1.0vw, 0.9em); 
+            padding: 6px 8px; /* ลด padding */
         }
         /* === END NEW === */
+
+/* === START: ปรับปรุงฟอร์มรหัสผ่านสำรอง (User Request) === */
+#page-data #backup-password-form {
+    /* กำหนดให้ฟอร์มใช้ Grid 1 คอลัมน์ (สำหรับ Desktop) */
+    grid-template-columns: 1fr;
+    /* ลดขนาดสูงสุดของฟอร์มเพื่อควบคุมความกว้าง */
+    max-width: 350px !important; /* ปรับขนาดให้แคบลงและกำหนดให้มีความสำคัญสูง */
+    margin: 10px auto 10px auto !important; /* จัดให้อยู่ตรงกลาง */
+    padding: 10px;
+    border: 1px solid var(--border-color); /* เพิ่มเส้นขอบเล็กน้อย */
+    border-radius: 6px;
+    background-color: var(--background-alt); /* ใช้สีพื้นหลังทางเลือก */
+    gap: 10px; /* เพิ่มระยะห่างระหว่างกลุ่ม */
+}
+
+#page-data #backup-password-form .form-group {
+    /* ทำให้แต่ละ label/input เป็นแถวเดียวกัน (Stacked) */
+    display: flex;
+    flex-direction: column;
+    align-items: stretch; /* ยืดให้ความกว้างเท่ากัน */
+    gap: 3px;
+    grid-column: 1 / -1; /* ครอบคลุมความกว้างเต็ม Grid */
+}
+
+#page-data #backup-password-form label {
+    /* ปรับ label ให้อยู่ด้านบนซ้ายของ input */
+    text-align: left !important;
+    font-weight: bold;
+    margin-bottom: 0;
+}
+
+#page-data #backup-password-form input[type="password"] {
+    /* ให้ input มีความกว้างเต็มพื้นที่ที่กำหนดใน max-width */
+    width: 100% !important;
+    max-width: none !important; 
+    text-align: left !important; /* จัดข้อความให้อยู่ด้านซ้าย */
+    padding: 8px 10px !important; 
+}
+/* === END: ปรับปรุงฟอร์มรหัสผ่านสำรอง === */
 
         /* RESPONSIVE STYLES */
         @media (max-width: 768px) {
@@ -692,6 +829,7 @@
                 flex-direction: column;
                 gap: 3px; /* ลด gap */
             }
+
             #page-users #user-form .form-group label,
             #page-data #backup-password-form .form-group label {
                  margin-bottom: 0;
@@ -739,6 +877,7 @@
                 font-size: clamp(9px, 2.2vw, 12px); 
                 line-height: 1.0;
                 vertical-align: middle;
+                white-space: nowrap; /* Added back for mobile tables to prevent stretching */
                 color: var(--text-color);
                 background-color: var(--background-color);
             }
@@ -810,7 +949,13 @@
                 padding-top: 6px;  /* Keep original padding */
                 padding-bottom: 6px;
             }
-
+@media (max-width: 768px) {
+    /* ... ส่วนอื่น ... */
+    #modalBodyContent { 
+        padding: 10px 2px; /* ตัวอย่าง: บน/ล่าง 10px, ซ้าย/ขวา 3px สำหรับมือถือ */ 
+    }
+    /* ... ส่วนอื่น ... */
+}
             @media (max-width: 768px) {
                 /* Double the vertical padding for height increase (Mobile) */
                 #page-pos #cart-table tbody td {
@@ -931,22 +1076,24 @@
             /* MODAL (POPUP) RESPONSIVE STYLES */
             
             /* --- General Compactness --- */
-            #modalBodyContent { padding: 5px; }
+            #modalBodyContent { padding: 10px 2px; } /* ปรับ: ลด padding โดยรอบของเนื้อหา modal */
             #modalBodyContent h2 {
                 font-size: 1.0rem; 
                 padding-bottom: 2px; /* ลด padding */
                 margin-bottom: 4px; /* ลด margin */
-                color: #000000 !important;
+                color: #0088ff !important;
             }
             #modalBodyContent table th {
-                font-size: clamp(8px, 2.0vw, 9px); /* ลด font size */
-                padding: 1px 2px; /* ลด padding */
-                color: #000000 !important;
+                font-size: clamp(7px, 1.8vw, 8.5px); /* ปรับ: ลด font size อีกเล็กน้อย */
+                padding: 5px 3px; /* ปรับ: เพิ่ม padding-top/bottom เพื่อเพิ่มความสูงของแถวตามคำแนะนำ */
+                color: #0088ff !important;
+                border: 0.5px solid #333 !important; /* ปรับ: เส้นขอบเซลล์ให้คมชัด */
             }
             #modalBodyContent table td {
-                padding: 1px 2px; /* ลด padding */
+                padding: 4px 2px; /* ปรับ: เพิ่ม padding-top/bottom เพื่อเพิ่มความสูงของแถวตามคำแนะนำ */
                 vertical-align: middle;
-                color: #000000 !important;
+                color: #0088ff !important;
+                border: 0.5px solid #333 !important; /* ปรับ: เส้นขอบเซลล์ให้คมชัด */
             }
             #modalBodyContent table td::before { display: none; }
             #modalBodyContent table thead,
@@ -1098,6 +1245,13 @@
                 max-width: none; /* Override desktop max-width */
                 justify-self: stretch; /* Make it fill the grid cell */
             }
+            
+            /* ===== มือถือ ===== */
+            @media (max-width: 768px) {
+                #page-data #backup-password-form {
+                    max-width: 95% !important; /* ให้ฟอร์มกว้างเกือบเต็มจอสำหรับมือถือ */
+                }
+            }
 
             /* === START: SELLER VIEW MOBILE ENHANCEMENTS (USER REQUEST) === */
             
@@ -1151,12 +1305,22 @@
                 text-align: left;
                 line-height: 1.3; /* ลด line height */
                 font-weight: 500; /* หนาขึ้นเล็กน้อย */
+                white-space: normal; /* Allow wrapping */
             }
             
             /* คอลัมน์ยอดขาย (ทำให้เด่น) */
             #seller-sales-history-table td:nth-child(4) {
                 font-weight: bold;
                 color: var(--primary-color);
+            }
+            
+            /* กำหนดให้ col อื่นๆ มี white-space: nowrap; เหมือนเดิม */
+            #seller-sales-history-table td:nth-child(1),
+            #seller-sales-history-table td:nth-child(2),
+            #seller-sales-history-table td:nth-child(4),
+            #seller-sales-history-table td:nth-child(5),
+            #seller-sales-history-table td:nth-child(6) {
+                white-space: nowrap;
             }
 
             /* --- ปรับปรุงส่วน Backup ข้อมูลของผู้ขาย --- */
